@@ -11,7 +11,7 @@ use nalgebra as na;
 
 use glium::{uniform, Surface};
 
-use crate::pipeline::{Context, RenderPass, ScenePassComponent};
+use crate::pipeline::{Context, RenderPassComponent, ScenePassComponent};
 use crate::shader::{self, ToUniforms};
 use crate::{scene, Camera, DrawError, Instancing, Resources};
 
@@ -35,7 +35,7 @@ pub struct ShadowMapping {
     shadow_texture: glium::texture::DepthTexture2d,
 }
 
-impl RenderPass for ShadowMapping {
+impl RenderPassComponent for ShadowMapping {
     fn clear_buffers<F: glium::backend::Facade>(&self, facade: &F) -> Result<(), DrawError> {
         let mut shadow_target =
             glium::framebuffer::SimpleFrameBuffer::depth_only(facade, &self.shadow_texture)?;

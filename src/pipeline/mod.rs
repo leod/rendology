@@ -4,7 +4,7 @@ pub mod render_pass;
 pub mod shaders;
 pub mod shadow;
 
-pub use render_pass::{CompositionPassComponent, RenderPass, ScenePassComponent};
+pub use render_pass::{CompositionPassComponent, RenderPassComponent, ScenePassComponent};
 
 use coarse_prof::profile;
 use log::info;

@@ -11,7 +11,9 @@ use nalgebra as na;
 
 use glium::{uniform, Surface};
 
-use crate::pipeline::{CompositionPassComponent, Context, Light, RenderPass, ScenePassComponent};
+use crate::pipeline::{
+    CompositionPassComponent, Context, Light, RenderPassComponent, ScenePassComponent,
+};
 use crate::shader::{self, ToUniforms};
 use crate::{screen_quad, Camera, DrawError, Instance, Instancing, Object, Resources, ScreenQuad};
 
@@ -39,7 +41,7 @@ pub struct DeferredShading {
     light_instancing: Instancing<Light>,
 }
 
-impl RenderPass for DeferredShading {
+impl RenderPassComponent for DeferredShading {
     fn clear_buffers<F: glium::backend::Facade>(&self, facade: &F) -> Result<(), DrawError> {
         let mut framebuffer = glium::framebuffer::MultiOutputFrameBuffer::new(
             facade,
