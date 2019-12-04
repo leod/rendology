@@ -6,15 +6,15 @@ pub mod shadow;
 
 pub use render_pass::{CompositionPassComponent, RenderPass, ScenePassComponent};
 
+use coarse_prof::profile;
 use log::info;
 
 use glium::{uniform, Surface};
 
-use crate::config::ViewConfig;
-use crate::render::fxaa::{self, FXAA};
-use crate::render::shader::{ToUniforms, ToVertex, UniformInput};
-use crate::render::{
-    self, object, scene, screen_quad, shader, Context, DrawError, Instancing, Light, RenderList,
+use crate::fxaa::{self, FXAA};
+use crate::shader::{ToUniforms, ToVertex, UniformInput};
+use crate::{
+    object, scene, screen_quad, shader, Context, DrawError, Instancing, Light, RenderList,
     RenderLists, Resources, ScreenQuad,
 };
 
@@ -73,7 +73,7 @@ impl Components {
     fn create<F: glium::backend::Facade>(
         facade: &F,
         config: &Config,
-        view_config: &ViewConfig,
+        target_size: (u32, u32),
     ) -> Result<Self, CreationError> {
         let shadow_mapping = config
             .shadow_mapping
@@ -86,12 +86,7 @@ impl Components {
             .deferred_shading
             .as_ref()
             .map(|config| {
-                DeferredShading::create(
-                    facade,
-                    &config,
-                    shadow_mapping.is_some(),
-                    view_config.window_size,
-                )
+                DeferredShading::create(facade, &config, shadow_mapping.is_some(), target_size)
             })
             .transpose()
             .map_err(CreationError::DeferredShading)?;
@@ -99,7 +94,7 @@ impl Components {
         let glow = config
             .glow
             .as_ref()
-            .map(|config| Glow::create(facade, config, view_config.window_size))
+            .map(|config| Glow::create(facade, config, target_size))
             .transpose()
             .map_err(CreationError::Glow)?;
 
@@ -115,7 +110,7 @@ impl Components {
         facade: &F,
         setup: ScenePassSetup,
         mut shader_core: shader::Core<Context, I, V>,
-    ) -> Result<ScenePass<I, V>, render::CreationError>
+    ) -> Result<ScenePass<I, V>, crate::CreationError>
     where
         F: glium::backend::Facade,
         I: UniformInput + Clone,
@@ -318,9 +313,9 @@ impl Pipeline {
     pub fn create<F: glium::backend::Facade>(
         facade: &F,
         config: &Config,
-        view_config: &ViewConfig,
+        target_size: (u32, u32),
     ) -> Result<Pipeline, CreationError> {
-        let components = Components::create(facade, config, view_config)?;
+        let components = Components::create(facade, config, target_size)?;
 
         let scene_pass_solid = components.create_scene_pass(
             facade,
@@ -350,7 +345,7 @@ impl Pipeline {
         let plain_core = scene::model::scene_core();
         let plain_program = plain_core
             .build_program(facade, shader::InstancingMode::Vertex)
-            .map_err(render::CreationError::from)?;
+            .map_err(crate::CreationError::from)?;
         let plain_instancing = Instancing::create(facade)?;
         let scene_pass_plain = ScenePass {
             setup: ScenePassSetup {
@@ -362,15 +357,14 @@ impl Pipeline {
             instancing: plain_instancing,
         };
 
-        let rounded_size: (u32, u32) = view_config.window_size.into();
-        let scene_color_texture = Self::create_color_texture(facade, rounded_size)?;
-        let scene_depth_texture = Self::create_depth_texture(facade, rounded_size)?;
+        let scene_color_texture = Self::create_color_texture(facade, target_size)?;
+        let scene_depth_texture = Self::create_depth_texture(facade, target_size)?;
 
         let composition_core = components.composition_core(config);
         let composition_program = composition_core
             .build_program(facade, shader::InstancingMode::Uniforms)
-            .map_err(render::CreationError::from)?;
-        let composition_texture = Self::create_color_texture(facade, rounded_size)?;
+            .map_err(crate::CreationError::from)?;
+        let composition_texture = Self::create_color_texture(facade, target_size)?;
 
         let fxaa = config
             .fxaa
@@ -380,7 +374,7 @@ impl Pipeline {
             .map_err(CreationError::FXAA)?;
         let copy_texture_program = shaders::composition_core()
             .build_program(facade, shader::InstancingMode::Uniforms)
-            .map_err(render::CreationError::from)?;
+            .map_err(crate::CreationError::from)?;
 
         info!("Creating screen quad");
         let screen_quad = ScreenQuad::create(facade)?;
@@ -583,27 +577,25 @@ impl Pipeline {
         Ok(())
     }
 
-    pub fn on_window_resize<F: glium::backend::Facade>(
+    pub fn on_target_resize<F: glium::backend::Facade>(
         &mut self,
         facade: &F,
-        new_window_size: glium::glutin::dpi::LogicalSize,
+        target_size: (u32, u32),
     ) -> Result<(), CreationError> {
         if let Some(deferred_shading) = self.components.deferred_shading.as_mut() {
             deferred_shading
-                .on_window_resize(facade, new_window_size)
+                .on_target_resize(facade, target_size)
                 .map_err(CreationError::DeferredShading)?;
         }
 
         if let Some(glow) = self.components.glow.as_mut() {
-            glow.on_window_resize(facade, new_window_size)
+            glow.on_target_resize(facade, target_size)
                 .map_err(CreationError::Glow)?;
         }
 
-        let rounded_size: (u32, u32) = new_window_size.into();
-        self.scene_color_texture = Self::create_color_texture(facade, rounded_size)?;
-        self.scene_depth_texture = Self::create_depth_texture(facade, rounded_size)?;
-
-        self.composition_texture = Self::create_color_texture(facade, rounded_size)?;
+        self.scene_color_texture = Self::create_color_texture(facade, target_size)?;
+        self.scene_depth_texture = Self::create_depth_texture(facade, target_size)?;
+        self.composition_texture = Self::create_color_texture(facade, target_size)?;
 
         Ok(())
     }
@@ -619,13 +611,13 @@ impl Pipeline {
             size.0,
             size.1,
         )
-        .map_err(render::CreationError::from)?)
+        .map_err(crate::CreationError::from)?)
     }
 
     fn create_depth_texture<F: glium::backend::Facade>(
         facade: &F,
         size: (u32, u32),
-    ) -> Result<glium::texture::DepthTexture2d, render::CreationError> {
+    ) -> Result<glium::texture::DepthTexture2d, crate::CreationError> {
         Ok(glium::texture::DepthTexture2d::empty_with_format(
             facade,
             glium::texture::DepthFormat::F32,
@@ -633,7 +625,7 @@ impl Pipeline {
             size.0,
             size.1,
         )
-        .map_err(render::CreationError::from)?)
+        .map_err(crate::CreationError::from)?)
     }
 }
 
@@ -643,11 +635,11 @@ pub enum CreationError {
     DeferredShading(deferred::CreationError),
     Glow(glow::CreationError),
     FXAA(fxaa::CreationError),
-    CreationError(render::CreationError),
+    CreationError(crate::CreationError),
 }
 
-impl From<render::CreationError> for CreationError {
-    fn from(err: render::CreationError) -> CreationError {
+impl From<crate::CreationError> for CreationError {
+    fn from(err: crate::CreationError) -> CreationError {
         CreationError::CreationError(err)
     }
 }

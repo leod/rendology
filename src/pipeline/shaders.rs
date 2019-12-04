@@ -1,6 +1,6 @@
 use glium::uniforms::UniformType;
 
-use crate::render::{screen_quad, shader};
+use crate::{screen_quad, shader};
 
 pub fn diffuse_scene_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader::Core<P, I, V> {
     let color_expr = if core.fragment.has_out(shader::defs::F_SHADOW) {

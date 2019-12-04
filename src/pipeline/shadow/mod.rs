@@ -11,11 +11,11 @@ use nalgebra as na;
 
 use glium::{uniform, Surface};
 
-use crate::render::pipeline::{Context, RenderPass, ScenePassComponent};
-use crate::render::shader::{self, ToUniforms};
-use crate::render::{self, scene, Camera, DrawError, Instancing, Resources};
+use crate::pipeline::{Context, RenderPass, ScenePassComponent};
+use crate::shader::{self, ToUniforms};
+use crate::{scene, Camera, DrawError, Instancing, Resources};
 
-pub use crate::render::CreationError;
+pub use crate::CreationError;
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -53,8 +53,8 @@ impl ScenePassComponent for ShadowMapping {
     /// which are given by `ShadowMapping::scene_pass_uniforms`.
     fn core_transform<P, V>(
         &self,
-        core: render::shader::Core<Context, P, V>,
-    ) -> render::shader::Core<Context, P, V> {
+        core: shader::Core<Context, P, V>,
+    ) -> shader::Core<Context, P, V> {
         shaders::render_shadowed_core_transform(core)
     }
 }

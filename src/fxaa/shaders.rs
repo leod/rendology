@@ -23,7 +23,7 @@
 
 use glium::uniforms::UniformType;
 
-use crate::render::{screen_quad, shader};
+use crate::{screen_quad, shader};
 
 pub const EXPLORATION_OFFSETS_LOW: &[f32] = &[1.0, 1.5, 2.0, 4.0, 12.0];
 pub const EXPLORATION_OFFSETS_MEDIUM: &[f32] = &[1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 4.0, 8.0];

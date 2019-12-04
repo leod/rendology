@@ -4,7 +4,7 @@ use glium::{self, implement_vertex};
 use log::info;
 use num_derive::{FromPrimitive, ToPrimitive};
 
-pub use crate::render::CreationError;
+pub use crate::CreationError;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, FromPrimitive, ToPrimitive)]
 pub enum Object {

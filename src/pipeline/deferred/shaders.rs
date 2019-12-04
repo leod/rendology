@@ -1,7 +1,7 @@
 use glium::uniforms::UniformType;
 
-use crate::render::pipeline::Light;
-use crate::render::{object, screen_quad, shader, Camera};
+use crate::pipeline::Light;
+use crate::{object, screen_quad, shader, Camera};
 
 pub const F_WORLD_POS: &str = "f_world_pos";
 pub const F_WORLD_NORMAL: &str = "f_world_normal";

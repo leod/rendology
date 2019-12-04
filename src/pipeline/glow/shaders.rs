@@ -5,7 +5,7 @@
 
 use glium::uniforms::UniformType;
 
-use crate::render::{screen_quad, shader};
+use crate::{screen_quad, shader};
 
 pub const F_GLOW_COLOR: &str = "f_glow_color";
 

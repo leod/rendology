@@ -2,10 +2,10 @@ use log::info;
 
 use num_traits::{FromPrimitive, ToPrimitive};
 
-use crate::render::object::{Object, ObjectBuffers};
-use crate::render::{scene, shader};
+use crate::object::{Object, ObjectBuffers};
+use crate::{scene, shader};
 
-pub use crate::render::CreationError;
+pub use crate::CreationError;
 
 pub struct Resources {
     pub object_buffers: Vec<ObjectBuffers>,
