@@ -20,10 +20,6 @@ pub enum Object {
     TessellatedCube,
     TessellatedCylinder,
 
-    PipeSegment,
-    PipeSplit,
-    PipeBend,
-
     /// Counter of the number of objects
     NumTypes,
 }
@@ -376,12 +372,6 @@ impl Object {
                     &indices,
                 )
             }
-            Object::PipeSegment =>
-                ObjectBuffers::load_wavefront(facade, Path::new("resources/pipe_seg.obj")),
-            Object::PipeSplit =>
-                ObjectBuffers::load_wavefront(facade, Path::new("resources/pipe_split.obj")),
-            Object::PipeBend =>
-                ObjectBuffers::load_wavefront(facade, Path::new("resources/pipe_bend.obj")),
             Object::NumTypes => panic!("Object::NumTypes cannot be instantiated!"),
         }
     }
