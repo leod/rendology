@@ -5,9 +5,9 @@ use log::info;
 use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler, SamplerWrapFunction};
 use glium::{uniform, Program, Surface, Texture2d};
 
-use crate::render::{shader, DrawError, ScreenQuad};
+use crate::{shader, DrawError, ScreenQuad};
 
-pub use crate::render::CreationError;
+pub use crate::CreationError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Quality {

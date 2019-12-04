@@ -1,6 +1,6 @@
 use glium::implement_vertex;
 
-use crate::render::CreationError;
+use crate::CreationError;
 
 #[derive(Copy, Clone)]
 pub struct Vertex {

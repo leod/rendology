@@ -1,8 +1,6 @@
 use glium::uniforms::UniformType;
 
-use crate::render::shader::{
-    FragmentOutDef, FragmentOutQualifier, VertexOutDef, VertexOutQualifier,
-};
+use crate::shader::{FragmentOutDef, FragmentOutQualifier, VertexOutDef, VertexOutQualifier};
 
 pub const V_WORLD_NORMAL: &str = "v_world_normal";
 pub const V_WORLD_POS: &str = "v_world_pos";

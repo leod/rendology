@@ -1,6 +1,6 @@
 use nalgebra as na;
 
-use crate::render::{scene, Camera, RenderList};
+use crate::{scene, Camera, RenderList};
 
 #[derive(Debug, Clone)]
 pub struct Context {

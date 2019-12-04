@@ -1,5 +1,5 @@
-use crate::render::shader::ToUniforms;
-use crate::render::{Object, Resources};
+use crate::shader::ToUniforms;
+use crate::{Object, Resources};
 
 #[derive(Clone, Debug)]
 pub struct Instance<T> {

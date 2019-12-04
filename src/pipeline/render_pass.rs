@@ -1,5 +1,5 @@
-use crate::render::pipeline::Context;
-use crate::render::{screen_quad, shader, DrawError};
+use crate::pipeline::Context;
+use crate::{screen_quad, shader, DrawError};
 
 pub trait RenderPass {
     fn clear_buffers<F: glium::backend::Facade>(&self, facade: &F) -> Result<(), DrawError>;

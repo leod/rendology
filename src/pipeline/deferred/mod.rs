@@ -9,17 +9,13 @@ use log::info;
 
 use nalgebra as na;
 
-use glium::{glutin, uniform, Surface};
+use glium::{uniform, Surface};
 
-use crate::render::pipeline::{
-    CompositionPassComponent, Context, Light, RenderPass, ScenePassComponent,
-};
-use crate::render::shader::{self, ToUniforms};
-use crate::render::{
-    self, screen_quad, Camera, DrawError, Instance, Instancing, Object, Resources, ScreenQuad,
-};
+use crate::pipeline::{CompositionPassComponent, Context, Light, RenderPass, ScenePassComponent};
+use crate::shader::{self, ToUniforms};
+use crate::{screen_quad, Camera, DrawError, Instance, Instancing, Object, Resources, ScreenQuad};
 
-pub use crate::render::CreationError;
+pub use crate::CreationError;
 
 #[derive(Debug, Clone, Default)]
 pub struct Config;
@@ -58,8 +54,8 @@ impl RenderPass for DeferredShading {
 impl ScenePassComponent for DeferredShading {
     fn core_transform<P, V>(
         &self,
-        core: render::shader::Core<Context, P, V>,
-    ) -> render::shader::Core<Context, P, V> {
+        core: shader::Core<Context, P, V>,
+    ) -> shader::Core<Context, P, V> {
         // Write scene to separate buffers
         shaders::scene_buffers_core_transform(self.shadow_texture.is_some(), core)
     }
@@ -81,8 +77,8 @@ impl ScenePassComponent for DeferredShading {
 impl CompositionPassComponent for DeferredShading {
     fn core_transform(
         &self,
-        core: render::shader::Core<(), (), screen_quad::Vertex>,
-    ) -> render::shader::Core<(), (), screen_quad::Vertex> {
+        core: shader::Core<(), (), screen_quad::Vertex>,
+    ) -> shader::Core<(), (), screen_quad::Vertex> {
         shaders::composition_core_transform(core)
     }
 }
@@ -92,20 +88,19 @@ impl DeferredShading {
         facade: &F,
         _config: &Config,
         have_shadows: bool,
-        window_size: glutin::dpi::LogicalSize,
+        target_size: (u32, u32),
     ) -> Result<DeferredShading, CreationError> {
         info!("Creating deferred buffer textures");
-        let rounded_size: (u32, u32) = window_size.into();
         let scene_textures = [
-            Self::create_texture(facade, rounded_size)?,
-            Self::create_texture(facade, rounded_size)?,
+            Self::create_texture(facade, target_size)?,
+            Self::create_texture(facade, target_size)?,
         ];
         let shadow_texture = if have_shadows {
-            Some(Self::create_shadow_texture(facade, rounded_size)?)
+            Some(Self::create_shadow_texture(facade, target_size)?)
         } else {
             None
         };
-        let light_texture = Self::create_texture(facade, rounded_size)?;
+        let light_texture = Self::create_texture(facade, target_size)?;
 
         info!("Creating deferred light programs");
         let main_light_screen_quad_core = shaders::main_light_screen_quad_core(have_shadows);
@@ -135,27 +130,26 @@ impl DeferredShading {
         })
     }
 
-    pub fn on_window_resize<F: glium::backend::Facade>(
+    pub fn on_target_resize<F: glium::backend::Facade>(
         &mut self,
         facade: &F,
-        new_window_size: glutin::dpi::LogicalSize,
+        target_size: (u32, u32),
     ) -> Result<(), CreationError> {
         info!(
             "Recreating textures for deferred shading with size {:?}",
-            new_window_size
+            target_size,
         );
 
-        let rounded_size: (u32, u32) = new_window_size.into();
         self.scene_textures = [
-            Self::create_texture(facade, rounded_size)?,
-            Self::create_texture(facade, rounded_size)?,
+            Self::create_texture(facade, target_size)?,
+            Self::create_texture(facade, target_size)?,
         ];
 
         if let Some(shadow_texture) = self.shadow_texture.as_mut() {
-            *shadow_texture = Self::create_shadow_texture(facade, rounded_size)?;
+            *shadow_texture = Self::create_shadow_texture(facade, target_size)?;
         }
 
-        self.light_texture = Self::create_texture(facade, rounded_size)?;
+        self.light_texture = Self::create_texture(facade, target_size)?;
 
         Ok(())
     }

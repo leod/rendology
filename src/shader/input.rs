@@ -86,7 +86,7 @@ impl UniformTypeDummy {
 #[macro_export]
 macro_rules! impl_uniform_input {
     ($ty:ident, $this:ident => { $( $field:ident: $variant:ident => $value:expr, )* } $(,)? ) => {
-        impl $crate::render::shader::ToUniforms for $ty {
+        impl $crate::shader::ToUniforms for $ty {
             fn visit_values<'a, F>(&'a $this, mut output: F)
             where
                 F: FnMut(&str, glium::uniforms::UniformValue<'a>),
@@ -97,13 +97,13 @@ macro_rules! impl_uniform_input {
             }
         }
 
-        impl $crate::render::shader::UniformInput for $ty {
+        impl $crate::shader::UniformInput for $ty {
             fn uniform_input_defs() -> Vec<(String, glium::uniforms::UniformType)> {
                 vec![
                     $(
                         (
                             stringify!($field).to_string(),
-                            $crate::render::shader::input::UniformTypeDummy::$variant.to_uniform_type()
+                            $crate::shader::input::UniformTypeDummy::$variant.to_uniform_type()
                         ),
                     )*
                 ]
@@ -118,14 +118,14 @@ macro_rules! impl_to_vertex {
         #[derive(Copy, Clone, Debug)]
         pub struct MyVertex {
             $(
-                $field: $crate::render::shader::input::$variant,
+                $field: $crate::shader::input::$variant,
             )*
         }
 
         use glium::implement_vertex;
         implement_vertex!(MyVertex, $($field,)*);
 
-        impl $crate::render::shader::ToVertex for $ty {
+        impl $crate::shader::ToVertex for $ty {
             type Vertex = MyVertex;
 
             fn to_vertex(&$this) -> Self::Vertex {

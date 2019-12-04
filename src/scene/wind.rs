@@ -1,6 +1,6 @@
 use nalgebra as na;
 
-use crate::render::{object, shader, Context};
+use crate::{object, shader, Context};
 
 #[derive(Debug, Clone)]
 pub struct Params {

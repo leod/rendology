@@ -4,10 +4,10 @@ use log::info;
 
 use num_traits::{FromPrimitive, ToPrimitive};
 
-use crate::render::shader::ToVertex;
-use crate::render::{Instance, Object, Resources};
+use crate::shader::ToVertex;
+use crate::{Instance, Object, Resources};
 
-pub use crate::render::error::{CreationError, DrawError};
+pub use crate::error::{CreationError, DrawError};
 
 pub const INSTANCES_PER_BUFFER: usize = 10000;
 

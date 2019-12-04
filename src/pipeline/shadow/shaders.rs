@@ -1,7 +1,7 @@
 use glium::uniforms::UniformType;
 
-use crate::render::pipeline::Context;
-use crate::render::shader;
+use crate::pipeline::Context;
+use crate::shader;
 
 /// Shader core for rendering the depth map from the light source's perspective.
 pub fn depth_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader::Core<P, I, V> {

@@ -4,13 +4,13 @@ use log::info;
 
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler, SamplerWrapFunction};
-use glium::{glutin, uniform, Surface};
+use glium::{uniform, Surface};
 
-use crate::render::pipeline::{CompositionPassComponent, Context, RenderPass, ScenePassComponent};
-use crate::render::shader::{self, ToUniforms};
-use crate::render::{self, screen_quad, DrawError, ScreenQuad};
+use crate::pipeline::{CompositionPassComponent, Context, RenderPass, ScenePassComponent};
+use crate::shader::{self, ToUniforms};
+use crate::{screen_quad, DrawError, ScreenQuad};
 
-pub use crate::render::CreationError;
+pub use crate::CreationError;
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -44,8 +44,8 @@ impl RenderPass for Glow {
 impl ScenePassComponent for Glow {
     fn core_transform<P, V>(
         &self,
-        core: render::shader::Core<Context, P, V>,
-    ) -> render::shader::Core<Context, P, V> {
+        core: shader::Core<Context, P, V>,
+    ) -> shader::Core<Context, P, V> {
         shaders::glow_map_core_transform(core)
     }
 
@@ -57,8 +57,8 @@ impl ScenePassComponent for Glow {
 impl CompositionPassComponent for Glow {
     fn core_transform(
         &self,
-        core: render::shader::Core<(), (), screen_quad::Vertex>,
-    ) -> render::shader::Core<(), (), screen_quad::Vertex> {
+        core: shader::Core<(), (), screen_quad::Vertex>,
+    ) -> shader::Core<(), (), screen_quad::Vertex> {
         shaders::composition_core_transform(core)
     }
 }
@@ -67,11 +67,10 @@ impl Glow {
     pub fn create<F: glium::backend::Facade>(
         facade: &F,
         config: &Config,
-        window_size: glutin::dpi::LogicalSize,
+        target_size: (u32, u32),
     ) -> Result<Self, CreationError> {
-        let rounded_size: (u32, u32) = window_size.into();
-        let glow_texture = Self::create_texture(facade, rounded_size)?;
-        let glow_texture_back = Self::create_texture(facade, rounded_size)?;
+        let glow_texture = Self::create_texture(facade, target_size)?;
+        let glow_texture_back = Self::create_texture(facade, target_size)?;
 
         info!("Creating blur program");
         let blur_program =
@@ -129,14 +128,13 @@ impl Glow {
         Ok(())
     }
 
-    pub fn on_window_resize<F: glium::backend::Facade>(
+    pub fn on_target_resize<F: glium::backend::Facade>(
         &mut self,
         facade: &F,
-        new_window_size: glutin::dpi::LogicalSize,
+        target_size: (u32, u32),
     ) -> Result<(), CreationError> {
-        let rounded_size: (u32, u32) = new_window_size.into();
-        self.glow_texture = Self::create_texture(facade, rounded_size)?;
-        self.glow_texture_back = Self::create_texture(facade, rounded_size)?;
+        self.glow_texture = Self::create_texture(facade, target_size)?;
+        self.glow_texture_back = Self::create_texture(facade, target_size)?;
 
         Ok(())
     }
