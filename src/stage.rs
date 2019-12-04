@@ -1,7 +1,7 @@
 use nalgebra as na;
 
 use crate::shader::ToVertex;
-use crate::{scene, Camera};
+use crate::Camera;
 
 #[derive(Clone)]
 pub struct RenderList<T: ToVertex> {

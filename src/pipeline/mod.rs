@@ -14,9 +14,9 @@ use glium::{uniform, Surface};
 
 use crate::fxaa::{self, FXAA};
 use crate::object::ObjectBuffers;
-use crate::scene::{self, SceneCore, ShadedScenePass, ShadedScenePassSetup, ShadowPass};
+use crate::scene::{SceneCore, ShadedScenePass, ShadedScenePassSetup, ShadowPass};
 use crate::shader::{ToUniforms, ToVertex};
-use crate::{shader, Context, DrawError, Instancing, Light, Resources, ScreenQuad};
+use crate::{shader, Context, DrawError, Instancing, Light, ScreenQuad};
 
 use components::Components;
 use config::Config;
