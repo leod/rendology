@@ -13,7 +13,7 @@ use glium::{uniform, Surface};
 
 use crate::object::{self, ObjectBuffers};
 use crate::shader::{self, ToUniforms, ToVertex};
-use crate::{screen_quad, Camera, Context, DrawError, Instancing, Object, Resources, ScreenQuad};
+use crate::{screen_quad, Camera, Context, DrawError, Instancing, Object, ScreenQuad};
 
 use crate::pipeline::{CompositionPassComponent, Light, RenderPassComponent, ScenePassComponent};
 

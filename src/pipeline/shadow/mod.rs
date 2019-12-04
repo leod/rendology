@@ -13,9 +13,8 @@ use glium::{uniform, Surface};
 
 use crate::object::ObjectBuffers;
 use crate::pipeline::{RenderPassComponent, ScenePassComponent};
-use crate::scene::{self, SceneCore};
 use crate::shader::{self, ToUniforms};
-use crate::{Camera, Context, DrawError, Instancing, Resources};
+use crate::{Camera, Context, DrawError, Instancing};
 
 pub use crate::CreationError;
 

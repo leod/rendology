@@ -1,9 +1,6 @@
-use log::info;
-
 use num_traits::{FromPrimitive, ToPrimitive};
 
 use crate::object::{self, Object, ObjectBuffers};
-use crate::{scene, shader};
 
 pub use crate::CreationError;
 
