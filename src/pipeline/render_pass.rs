@@ -6,10 +6,10 @@ pub trait RenderPassComponent {
 }
 
 pub trait ScenePassComponent {
-    fn core_transform<I, V>(
+    fn core_transform<P, I, V>(
         &self,
-        core: shader::Core<Context, I, V>,
-    ) -> shader::Core<Context, I, V>;
+        core: shader::Core<(Context, P), I, V>,
+    ) -> shader::Core<(Context, P), I, V>;
 
     fn output_textures(&self) -> Vec<(&'static str, &glium::texture::Texture2d)> {
         Vec::new()

@@ -1,8 +1,9 @@
 use log::info;
 
-use crate::shader::{self, ToUniforms, ToVertex, UniformInput};
-use crate::{fxaa, screen_quad};
-use crate::{Context, DrawError, Instancing, RenderList, Resources};
+use crate::object::ObjectBuffers;
+use crate::scene::{SceneCore, ShadedScenePass, ShadedScenePassSetup, ShadowPass};
+use crate::shader::{self, ToUniforms, ToVertex};
+use crate::{fxaa, screen_quad, Context, DrawError, Instancing};
 
 use crate::pipeline::config::Config;
 use crate::pipeline::deferred::{self, DeferredShading};
@@ -17,24 +18,6 @@ pub struct Components {
     pub shadow_mapping: Option<ShadowMapping>,
     pub deferred_shading: Option<DeferredShading>,
     pub glow: Option<Glow>,
-}
-
-#[derive(Debug, Clone)]
-pub struct ScenePassSetup {
-    pub shadow: bool,
-    pub glow: bool,
-}
-
-pub struct ScenePass<I: ToVertex, V> {
-    pub setup: ScenePassSetup,
-
-    /// Currently just used as a phantom.
-    #[allow(dead_code)]
-    pub shader_core: shader::Core<Context, I, V>,
-
-    pub program: glium::Program,
-
-    pub instancing: Instancing<I>,
 }
 
 impl Components {
@@ -73,34 +56,54 @@ impl Components {
         })
     }
 
-    pub fn create_scene_pass<F, I: ToVertex, V>(
+    pub fn create_shadow_pass<F, C>(
         &self,
         facade: &F,
-        setup: ScenePassSetup,
-        mut shader_core: shader::Core<Context, I, V>,
-    ) -> Result<ScenePass<I, V>, crate::CreationError>
+    ) -> Result<Option<ShadowPass<C>>, crate::CreationError>
     where
         F: glium::backend::Facade,
-        I: UniformInput + Clone,
-        V: glium::vertex::Vertex,
+        C: SceneCore,
     {
-        info!(
-            "Creating scene pass for I={}, V={}",
-            std::any::type_name::<I>(),
-            std::any::type_name::<V>(),
-        );
+        self.shadow_mapping
+            .as_ref()
+            .map(|shadow_mapping| {
+                info!("Creating shadow pass for C={}", std::any::type_name::<C>());
+
+                let shader_core = shadow_mapping.shadow_pass_core_transform(C::scene_core());
+                let program = shader_core.build_program(facade, shader::InstancingMode::Vertex)?;
+
+                Ok(ShadowPass {
+                    program,
+                    shader_core,
+                })
+            })
+            .transpose()
+    }
+
+    pub fn create_shaded_scene_pass<F, C>(
+        &self,
+        facade: &F,
+        setup: ShadedScenePassSetup,
+    ) -> Result<ShadedScenePass<C>, crate::CreationError>
+    where
+        F: glium::backend::Facade,
+        C: SceneCore,
+    {
+        info!("Creating scene pass for C={}", std::any::type_name::<C>());
+
+        let mut shader_core = C::scene_core();
 
         if let Some(glow) = self.glow.as_ref() {
-            if setup.glow {
+            if setup.draw_glowing {
                 shader_core = ScenePassComponent::core_transform(glow, shader_core);
             } else {
-                // Whoopsie there goes the abstraction, heh. All good though.
+                // Whoopsie there goes the "abstraction", heh. All good though.
                 shader_core = glow::shaders::no_glow_map_core_transform(shader_core);
             }
         }
 
         if let Some(shadow_mapping) = self.shadow_mapping.as_ref() {
-            if setup.shadow {
+            if setup.draw_shadowed {
                 shader_core = ScenePassComponent::core_transform(shadow_mapping, shader_core);
             }
         }
@@ -113,13 +116,10 @@ impl Components {
 
         let program = shader_core.build_program(facade, shader::InstancingMode::Vertex)?;
 
-        let instancing = Instancing::create(facade)?;
-
-        Ok(ScenePass {
+        Ok(ShadedScenePass {
             setup,
-            shader_core,
             program,
-            instancing,
+            shader_core,
         })
     }
 
@@ -163,96 +163,33 @@ impl Components {
         Ok(())
     }
 
-    pub fn scene_output_textures(
+    pub fn scene_pass<'a, C, S>(
         &self,
-        setup: &ScenePassSetup,
-    ) -> Vec<(&'static str, &glium::texture::Texture2d)> {
-        let mut textures = Vec::new();
-
-        textures.extend(
-            self.deferred_shading
-                .as_ref()
-                .map_or(Vec::new(), ScenePassComponent::output_textures),
-        );
-
-        if setup.glow {
-            textures.extend(
-                self.glow
-                    .as_ref()
-                    .map_or(Vec::new(), ScenePassComponent::output_textures),
-            );
-        }
-
-        textures
-    }
-
-    pub fn scene_pass_to_surface<I, V, S>(
-        &self,
-        resources: &Resources,
-        context: &Context,
-        pass: &ScenePass<I, V>,
-        _render_list: &RenderList<I>,
+        object: &ObjectBuffers<C::Vertex>,
+        instancing: &Instancing<<C::Instance as ToVertex>::Vertex>,
+        program: &glium::Program,
+        params: (&Context, &C::Params),
+        draw_params: &glium::DrawParameters,
         target: &mut S,
     ) -> Result<(), DrawError>
     where
-        I: ToUniforms + ToVertex,
-        V: glium::vertex::Vertex,
+        C: SceneCore,
         S: glium::Surface,
     {
-        let params = glium::DrawParameters {
-            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
-            depth: glium::Depth {
-                test: glium::DepthTest::IfLessOrEqual,
-                write: true,
-                ..Default::default()
-            },
-            line_width: Some(2.0),
-            ..Default::default()
-        };
-
         let uniforms = (
-            context,
+            params,
             self.shadow_mapping
                 .as_ref()
-                .map(|c| c.scene_pass_uniforms(context)),
+                .map(|c| c.scene_pass_uniforms(params.0)),
         );
 
-        pass.instancing.draw(
-            resources,
-            &pass.program,
+        instancing.draw(
+            object,
+            program,
             &uniforms.to_uniforms(),
-            &params,
+            &draw_params,
             target,
-        )?;
-
-        Ok(())
-    }
-
-    pub fn scene_pass<F, I, V>(
-        &self,
-        facade: &F,
-        resources: &Resources,
-        context: &Context,
-        pass: &ScenePass<I, V>,
-        render_list: &RenderList<I>,
-        color_texture: &glium::texture::Texture2d,
-        depth_texture: &glium::texture::DepthTexture2d,
-    ) -> Result<(), DrawError>
-    where
-        F: glium::backend::Facade,
-        I: ToUniforms + ToVertex,
-        V: glium::vertex::Vertex,
-    {
-        let mut output_textures = self.scene_output_textures(&pass.setup);
-        output_textures.push((shader::defs::F_COLOR, color_texture));
-
-        let mut framebuffer = glium::framebuffer::MultiOutputFrameBuffer::with_depth_buffer(
-            facade,
-            output_textures.into_iter(),
-            depth_texture,
-        )?;
-
-        self.scene_pass_to_surface(resources, context, pass, render_list, &mut framebuffer)
+        )
     }
 
     pub fn on_target_resize<F: glium::backend::Facade>(
@@ -272,6 +209,29 @@ impl Components {
         }
 
         Ok(())
+    }
+
+    pub fn shaded_scene_pass_output_textures(
+        &self,
+        setup: &ShadedScenePassSetup,
+    ) -> Vec<(&'static str, &glium::texture::Texture2d)> {
+        let mut textures = Vec::new();
+
+        textures.extend(
+            self.deferred_shading
+                .as_ref()
+                .map_or(Vec::new(), ScenePassComponent::output_textures),
+        );
+
+        if setup.draw_glowing {
+            textures.extend(
+                self.glow
+                    .as_ref()
+                    .map_or(Vec::new(), ScenePassComponent::output_textures),
+            );
+        }
+
+        textures
     }
 }
 
