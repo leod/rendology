@@ -62,19 +62,19 @@ impl IndexBuffer {
     }
 }
 
-pub struct ObjectBuffers {
-    pub vertex_buffer: glium::VertexBuffer<Vertex>,
+pub struct ObjectBuffers<V: Copy> {
+    pub vertex_buffer: glium::VertexBuffer<V>,
     pub index_buffer: IndexBuffer,
 }
 
-impl ObjectBuffers {
+impl ObjectBuffers<Vertex> {
     pub fn from_slices<F: glium::backend::Facade>(
         facade: &F,
         primitive_type: glium::index::PrimitiveType,
         positions: &[[f32; 3]],
         normals: &[[f32; 3]],
         indices: &[u32],
-    ) -> Result<ObjectBuffers, CreationError> {
+    ) -> Result<ObjectBuffers<Vertex>, CreationError> {
         let vertices = positions
             .iter()
             .zip(normals.iter())
@@ -97,7 +97,7 @@ impl ObjectBuffers {
     pub fn load_wavefront<F: glium::backend::Facade>(
         facade: &F,
         path: &Path,
-    ) -> Result<ObjectBuffers, CreationError> {
+    ) -> Result<ObjectBuffers<Vertex>, CreationError> {
         info!("Loading Wavefront .OBJ file: `{}'", path.display());
 
         // As in:
@@ -144,7 +144,7 @@ impl Object {
     #[rustfmt::skip]
     pub fn create_buffers<F: glium::backend::Facade>(
         self, facade: &F
-    ) -> Result<ObjectBuffers, CreationError> {
+    ) -> Result<ObjectBuffers<Vertex>, CreationError> {
         match self {
             Object::Triangle => {
                 let positions = vec![

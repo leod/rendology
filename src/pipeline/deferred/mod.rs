@@ -11,11 +11,11 @@ use nalgebra as na;
 
 use glium::{uniform, Surface};
 
-use crate::pipeline::{
-    CompositionPassComponent, Context, Light, RenderPassComponent, ScenePassComponent,
-};
-use crate::shader::{self, ToUniforms};
-use crate::{screen_quad, Camera, DrawError, Instance, Instancing, Object, Resources, ScreenQuad};
+use crate::object::{self, ObjectBuffers};
+use crate::shader::{self, ToUniforms, ToVertex};
+use crate::{screen_quad, Camera, Context, DrawError, Instancing, Object, Resources, ScreenQuad};
+
+use crate::pipeline::{CompositionPassComponent, Light, RenderPassComponent, ScenePassComponent};
 
 pub use crate::CreationError;
 
@@ -36,9 +36,10 @@ pub struct DeferredShading {
     light_object_program: glium::Program,
 
     screen_quad: ScreenQuad,
+    sphere: ObjectBuffers<object::Vertex>,
 
-    light_instances: Vec<Instance<Light>>,
-    light_instancing: Instancing<Light>,
+    light_instances: Vec<<Light as ToVertex>::Vertex>,
+    light_instancing: Instancing<<Light as ToVertex>::Vertex>,
 }
 
 impl RenderPassComponent for DeferredShading {
@@ -54,10 +55,10 @@ impl RenderPassComponent for DeferredShading {
 }
 
 impl ScenePassComponent for DeferredShading {
-    fn core_transform<P, V>(
+    fn core_transform<P, I, V>(
         &self,
-        core: shader::Core<Context, P, V>,
-    ) -> shader::Core<Context, P, V> {
+        core: shader::Core<(Context, P), I, V>,
+    ) -> shader::Core<(Context, P), I, V> {
         // Write scene to separate buffers
         shaders::scene_buffers_core_transform(self.shadow_texture.is_some(), core)
     }
@@ -115,6 +116,9 @@ impl DeferredShading {
         info!("Creating screen quad");
         let screen_quad = ScreenQuad::create(facade)?;
 
+        info!("Creating sphere");
+        let sphere = Object::Sphere.create_buffers(facade)?;
+
         info!("Creating light buffers");
         let light_instancing = Instancing::create(facade)?;
 
@@ -127,6 +131,7 @@ impl DeferredShading {
             main_light_screen_quad_program,
             light_object_program,
             screen_quad,
+            sphere,
             light_instances: Vec::new(),
             light_instancing,
         })
@@ -159,7 +164,6 @@ impl DeferredShading {
     pub fn light_pass<F: glium::backend::Facade>(
         &mut self,
         facade: &F,
-        resources: &Resources,
         camera: &Camera,
         lights: &[Light],
     ) -> Result<(), DrawError> {
@@ -214,10 +218,7 @@ impl DeferredShading {
                 ..light.clone()
             };
 
-            self.light_instances.push(Instance {
-                object: Object::Sphere,
-                params: light,
-            });
+            self.light_instances.push(light.to_vertex());
         }
 
         self.light_instancing
@@ -259,7 +260,7 @@ impl DeferredShading {
         };
 
         self.light_instancing.draw(
-            resources,
+            &self.sphere,
             &self.light_object_program,
             &uniforms.to_uniforms(),
             &draw_params,

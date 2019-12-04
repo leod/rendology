@@ -42,10 +42,10 @@ impl RenderPassComponent for Glow {
 }
 
 impl ScenePassComponent for Glow {
-    fn core_transform<P, V>(
+    fn core_transform<P, I, V>(
         &self,
-        core: shader::Core<Context, P, V>,
-    ) -> shader::Core<Context, P, V> {
+        core: shader::Core<(Context, P), I, V>,
+    ) -> shader::Core<(Context, P), I, V> {
         shaders::glow_map_core_transform(core)
     }
 

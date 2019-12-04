@@ -6,7 +6,7 @@ use nalgebra as na;
 
 const WINDOW_SIZE: (u32, u32) = (1280, 720);
 
-fn main() {
+fn run() -> Result<(), rendology::DrawError> {
     // Initialize glium
     let mut events_loop = glutin::EventsLoop::new();
     let display = {
@@ -18,9 +18,27 @@ fn main() {
     };
 
     // Initialize rendology
-    let resources = rendology::Resources::create(&display).unwrap();
     let mut pipeline =
         rendology::Pipeline::create(&display, &Default::default(), WINDOW_SIZE).unwrap();
+
+    let cube = rendology::Object::Cube.create_buffers(&display).unwrap();
+    let mut cube_instancing = rendology::Instancing::<
+        <rendology::scene::model::Instance as rendology::shader::ToVertex>::Vertex,
+    >::create(&display)
+    .unwrap();
+
+    let scene_pass = pipeline
+        .create_shaded_scene_pass::<_, rendology::scene::model::Core>(
+            &display,
+            rendology::scene::ShadedScenePassSetup {
+                draw_shadowed: true,
+                draw_glowing: false,
+            },
+        )
+        .unwrap();
+    let shadow_pass = pipeline
+        .create_shadow_pass::<_, rendology::scene::model::Core>(&display)
+        .unwrap();
 
     let start_time = Instant::now();
     let mut quit = false;
@@ -37,31 +55,29 @@ fn main() {
 
         let time_elapsed = start_time.elapsed().as_fractional_secs() as f32;
 
-        let mut render_lists = rendology::RenderLists::default();
-
         let angle = time_elapsed;
-        render_lists.solid.add(
-            rendology::Object::Cube,
-            &rendology::scene::model::Params {
-                transform: na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 3.0))
-                    * na::Matrix4::from_euler_angles(angle, angle, angle),
-                color: na::Vector4::new(0.9, 0.9, 0.9, 1.0),
-            },
-        );
-        render_lists.solid.add(
-            rendology::Object::Cube,
-            &rendology::scene::model::Params {
-                transform: na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(10.0, 10.0, 0.1)),
-                color: na::Vector4::new(0.0, 1.0, 0.0, 1.0),
-            },
-        );
-        render_lists.lights.push(rendology::Light {
+
+        let mut render_list = rendology::RenderList::default();
+        render_list.add(rendology::scene::model::Instance {
+            transform: na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 3.0))
+                * na::Matrix4::from_euler_angles(angle, angle, angle),
+            color: na::Vector4::new(0.9, 0.9, 0.9, 1.0),
+        });
+        render_list.add(rendology::scene::model::Instance {
+            transform: na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(10.0, 10.0, 0.1)),
+            color: na::Vector4::new(0.0, 1.0, 0.0, 1.0),
+        });
+        cube_instancing
+            .update(&display, render_list.as_slice())
+            .unwrap();
+
+        let lights = vec![rendology::Light {
             position: na::Point3::new(10.0, 10.0, 10.0),
             attenuation: na::Vector3::new(1.0, 0.0, 0.0),
             color: na::Vector3::new(1.0, 1.0, 1.0),
             is_main: true,
             ..Default::default()
-        });
+        }];
 
         let camera = rendology::Camera {
             view: na::Matrix4::look_at_rh(
@@ -84,11 +100,33 @@ fn main() {
             main_light_center: na::Point3::new(0.0, 0.0, 0.0),
         };
 
+        let draw_params = glium::DrawParameters {
+            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
+            depth: glium::Depth {
+                test: glium::DepthTest::IfLessOrEqual,
+                write: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
         let mut target = display.draw();
+
         pipeline
-            .draw_frame(&display, &resources, &context, &render_lists, &mut target)
-            .unwrap();
+            .start_frame(context, &display, &mut target)?
+            .shadow_pass()
+            .draw(&shadow_pass, &cube, &cube_instancing, &())?
+            .shaded_scene_pass()
+            .draw(&scene_pass, &cube, &cube_instancing, &(), &draw_params)?
+            .compose(&lights)?
+            .present()?;
 
         target.finish().unwrap();
     }
+
+    Ok(())
+}
+
+fn main() {
+    run().unwrap();
 }

@@ -16,9 +16,9 @@ pub fn depth_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader:
 }
 
 /// Shader core for rendering the shadowed scene.
-pub fn render_shadowed_core_transform<I, V>(
-    core: shader::Core<Context, I, V>,
-) -> shader::Core<Context, I, V> {
+pub fn render_shadowed_core_transform<P, I, V>(
+    core: shader::Core<(Context, P), I, V>,
+) -> shader::Core<(Context, P), I, V> {
     assert!(
         core.vertex.has_out(shader::defs::V_WORLD_POS),
         "VertexCore needs V_WORLD_POS output for shadow mapping"
