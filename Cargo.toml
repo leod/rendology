@@ -1,0 +1,19 @@
+[package]
+name = "rendology"
+version = "0.1.0"
+authors = ["leod <subtle.frustration@proton.me>"]
+edition = "2018"
+
+[dependencies]
+nalgebra = "0.18"
+glium = "0.25"
+log = "0.4"
+obj = { version = "0.9", features = ["genmesh"] }
+genmesh = "0.6"
+glsl = "3.0"
+num-traits = "0.2"
+num-derive = "0.3"
+coarse-prof = "0.2"
+
+[dev-dependencies]
+floating-duration = "0.1"
