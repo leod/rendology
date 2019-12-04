@@ -163,7 +163,7 @@ impl Components {
         Ok(())
     }
 
-    pub fn scene_pass<'a, C, S>(
+    pub fn scene_pass<C, S>(
         &self,
         object: &ObjectBuffers<C::Vertex>,
         instancing: &Instancing<<C::Instance as ToVertex>::Vertex>,
