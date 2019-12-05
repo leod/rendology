@@ -1,8 +1,6 @@
 use std::path::Path;
 
-use glium::{self, implement_vertex};
 use log::info;
-use num_derive::{FromPrimitive, ToPrimitive};
 
 use crate::basic_object::{BasicObject, Vertex};
 use crate::mesh::{IndexBuffer, Mesh};

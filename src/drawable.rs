@@ -1,6 +1,4 @@
-use crate::{DrawError, Mesh};
-
-use crate::shader::ToVertex;
+use crate::DrawError;
 
 pub trait Drawable<I, V>
 where

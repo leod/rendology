@@ -2,7 +2,7 @@ use log::info;
 
 use crate::scene::SceneCore;
 use crate::shader::{self, ToUniforms};
-use crate::{fxaa, screen_quad, Context, DrawError, Drawable, Mesh};
+use crate::{fxaa, screen_quad, Context, DrawError, Drawable};
 
 use crate::pipeline::config::Config;
 use crate::pipeline::deferred::{self, DeferredShading};
