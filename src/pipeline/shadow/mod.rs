@@ -13,7 +13,7 @@ use glium::{uniform, Surface};
 
 use crate::object::ObjectBuffers;
 use crate::pipeline::{RenderPassComponent, ScenePassComponent};
-use crate::shader::{self, ToUniforms};
+use crate::shader::{self, ToUniforms, ToVertex};
 use crate::{Camera, Context, DrawError, Instancing};
 
 pub use crate::CreationError;
@@ -108,7 +108,7 @@ impl ShadowMapping {
     where
         F: glium::backend::Facade,
         V: glium::vertex::Vertex,
-        I: glium::vertex::Vertex,
+        I: ToVertex,
         P: ToUniforms,
     {
         let mut shadow_target =

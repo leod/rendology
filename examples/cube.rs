@@ -22,10 +22,8 @@ fn run() -> Result<(), rendology::DrawError> {
         rendology::Pipeline::create(&display, &Default::default(), WINDOW_SIZE).unwrap();
 
     let cube = rendology::Object::Cube.create_buffers(&display).unwrap();
-    let mut cube_instancing = rendology::Instancing::<
-        <rendology::scene::model::Instance as rendology::shader::ToVertex>::Vertex,
-    >::create(&display)
-    .unwrap();
+    let mut cube_instancing =
+        rendology::Instancing::<rendology::scene::model::Instance>::create(&display).unwrap();
 
     let scene_pass = pipeline
         .create_shaded_scene_pass::<_, rendology::scene::model::Core>(
