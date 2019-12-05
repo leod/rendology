@@ -26,14 +26,15 @@ pub use render_pass::{CompositionPassComponent, RenderPassComponent, ScenePassCo
 pub struct Pipeline {
     components: Components,
 
+    target_size: (u32, u32),
     scene_color_texture: glium::texture::Texture2d,
     scene_depth_texture: glium::texture::DepthTexture2d,
-
-    composition_program: glium::Program,
     composition_texture: glium::texture::Texture2d,
 
-    fxaa: Option<FXAA>,
+    composition_program: glium::Program,
     copy_texture_program: glium::Program,
+
+    fxaa: Option<FXAA>,
 
     screen_quad: ScreenQuad,
 }
@@ -91,12 +92,13 @@ impl Pipeline {
 
         Ok(Pipeline {
             components,
+            target_size,
             scene_color_texture,
             scene_depth_texture,
-            composition_program,
             composition_texture,
-            fxaa,
+            composition_program,
             copy_texture_program,
+            fxaa,
             screen_quad,
         })
     }
@@ -132,6 +134,16 @@ impl Pipeline {
     ) -> Result<StartFrameStep<'a, F, S>, DrawError> {
         profile!("start_frame");
 
+        if target.get_dimensions() != self.target_size {
+            info!(
+                "Target size has changed to {:?}, resizing",
+                target.get_dimensions()
+            );
+
+            self.on_target_resize(facade, target.get_dimensions())?;
+            self.target_size = target.get_dimensions();
+        }
+
         let mut framebuffer = glium::framebuffer::SimpleFrameBuffer::with_depth_buffer(
             facade,
             &self.scene_color_texture,
@@ -149,11 +161,11 @@ impl Pipeline {
         }))
     }
 
-    pub fn on_target_resize<F: glium::backend::Facade>(
+    fn on_target_resize<F: glium::backend::Facade>(
         &mut self,
         facade: &F,
         target_size: (u32, u32),
-    ) -> Result<(), CreationError> {
+    ) -> Result<(), crate::CreationError> {
         self.components.on_target_resize(facade, target_size)?;
 
         self.scene_color_texture = Self::create_color_texture(facade, target_size)?;
@@ -166,15 +178,14 @@ impl Pipeline {
     fn create_color_texture<F: glium::backend::Facade>(
         facade: &F,
         size: (u32, u32),
-    ) -> Result<glium::texture::Texture2d, CreationError> {
+    ) -> Result<glium::texture::Texture2d, crate::CreationError> {
         Ok(glium::texture::Texture2d::empty_with_format(
             facade,
             glium::texture::UncompressedFloatFormat::F32F32F32F32,
             glium::texture::MipmapsOption::NoMipmap,
             size.0,
             size.1,
-        )
-        .map_err(crate::CreationError::from)?)
+        )?)
     }
 
     fn create_depth_texture<F: glium::backend::Facade>(
@@ -187,8 +198,7 @@ impl Pipeline {
             glium::texture::MipmapsOption::NoMipmap,
             size.0,
             size.1,
-        )
-        .map_err(crate::CreationError::from)?)
+        )?)
     }
 }
 

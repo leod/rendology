@@ -1,12 +1,14 @@
 use std::time::Instant;
 
 use floating_duration::TimeAsFloat;
-use glium::glutin;
+use glium::{glutin, Surface};
 use nalgebra as na;
 
 const WINDOW_SIZE: (u32, u32) = (1280, 720);
 
 fn run() -> Result<(), rendology::DrawError> {
+    simple_logger::init_with_level(log::Level::Info).unwrap();
+
     // Initialize glium
     let mut events_loop = glutin::EventsLoop::new();
     let display = {
@@ -77,6 +79,7 @@ fn run() -> Result<(), rendology::DrawError> {
             ..Default::default()
         }];
 
+        let mut target = display.draw();
         let camera = rendology::Camera {
             view: na::Matrix4::look_at_rh(
                 &na::Point3::new(9.0, -5.0, 7.0),
@@ -84,13 +87,18 @@ fn run() -> Result<(), rendology::DrawError> {
                 &na::Vector3::new(0.0, 0.0, 1.0),
             ),
             projection: na::Perspective3::new(
-                WINDOW_SIZE.0 as f32 / WINDOW_SIZE.1 as f32,
+                target.get_dimensions().0 as f32 / target.get_dimensions().1 as f32,
                 60.0f32.to_radians(),
                 0.1,
                 1000.0,
             )
             .to_homogeneous(),
-            viewport: na::Vector4::new(0.0, 0.0, WINDOW_SIZE.0 as f32, WINDOW_SIZE.1 as f32),
+            viewport: na::Vector4::new(
+                0.0,
+                0.0,
+                target.get_dimensions().0 as f32,
+                target.get_dimensions().1 as f32,
+            ),
         };
         let context = rendology::Context {
             camera,
@@ -107,8 +115,6 @@ fn run() -> Result<(), rendology::DrawError> {
             },
             ..Default::default()
         };
-
-        let mut target = display.draw();
 
         pipeline
             .start_frame(context, &display, &mut target)?
