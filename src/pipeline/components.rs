@@ -60,6 +60,7 @@ impl Components {
     pub fn create_shadow_pass<F, C>(
         &self,
         facade: &F,
+        scene_core: C,
     ) -> Result<Option<ShadowPass<C>>, crate::CreationError>
     where
         F: glium::backend::Facade,
@@ -70,7 +71,8 @@ impl Components {
             .map(|shadow_mapping| {
                 info!("Creating shadow pass for C={}", std::any::type_name::<C>());
 
-                let shader_core = shadow_mapping.shadow_pass_core_transform(C::scene_core());
+                let shader_core =
+                    shadow_mapping.shadow_pass_core_transform(scene_core.scene_core());
                 let program = shader_core.build_program(facade, shader::InstancingMode::Vertex)?;
 
                 Ok(ShadowPass {
@@ -84,6 +86,7 @@ impl Components {
     pub fn create_shaded_scene_pass<F, C>(
         &self,
         facade: &F,
+        scene_core: C,
         setup: ShadedScenePassSetup,
     ) -> Result<ShadedScenePass<C>, crate::CreationError>
     where
@@ -92,7 +95,7 @@ impl Components {
     {
         info!("Creating scene pass for C={}", std::any::type_name::<C>());
 
-        let mut shader_core = C::scene_core();
+        let mut shader_core = scene_core.scene_core();
 
         if let Some(glow) = self.glow.as_ref() {
             if setup.draw_glowing {

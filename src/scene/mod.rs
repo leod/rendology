@@ -9,5 +9,5 @@ pub trait SceneCore {
     type Instance: UniformInput + ToVertex + Clone;
     type Vertex: glium::vertex::Vertex;
 
-    fn scene_core() -> shader::Core<(Context, Self::Params), Self::Instance, Self::Vertex>;
+    fn scene_core(&self) -> shader::Core<(Context, Self::Params), Self::Instance, Self::Vertex>;
 }

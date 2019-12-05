@@ -33,7 +33,7 @@ impl SceneCore for Core {
     type Instance = Instance;
     type Vertex = object::Vertex;
 
-    fn scene_core() -> shader::Core<(Context, ()), Instance, object::Vertex> {
+    fn scene_core(&self) -> shader::Core<(Context, ()), Instance, object::Vertex> {
         let vertex = shader::VertexCore::empty()
             .with_out(
                 // TODO: Precompute inverse of mat_model if we ever have lots of vertices
