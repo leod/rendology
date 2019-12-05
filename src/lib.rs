@@ -15,7 +15,7 @@ pub use camera::Camera;
 pub use error::{CreationError, DrawError};
 pub use instancing::Instancing;
 pub use object::{Object, ObjectBuffers};
-pub use pipeline::Pipeline;
+pub use pipeline::{Pipeline, PlainScenePass, ShadedScenePass, ShadedScenePassSetup, ShadowPass};
 pub use resources::Resources;
 pub use screen_quad::ScreenQuad;
 pub use stage::{Context, Light, RenderList};

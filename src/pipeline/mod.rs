@@ -1,11 +1,11 @@
 pub mod config;
 pub mod deferred;
 pub mod glow;
-pub mod render_pass;
 pub mod shaders;
 pub mod shadow;
 
 mod components;
+mod render_pass;
 
 use coarse_prof::profile;
 use log::info;
@@ -14,14 +14,17 @@ use glium::{uniform, Surface};
 
 use crate::fxaa::{self, FXAA};
 use crate::object::ObjectBuffers;
-use crate::scene::{SceneCore, ShadedScenePass, ShadedScenePassSetup, ShadowPass};
+use crate::scene::SceneCore;
 use crate::shader::ToUniforms;
 use crate::{shader, Context, DrawError, Instancing, Light, ScreenQuad};
 
 use components::Components;
 
 pub use config::Config;
-pub use render_pass::{CompositionPassComponent, RenderPassComponent, ScenePassComponent};
+pub use render_pass::{
+    CompositionPassComponent, PlainScenePass, RenderPassComponent, ScenePassComponent,
+    ShadedScenePass, ShadedScenePassSetup, ShadowPass,
+};
 
 pub struct Pipeline {
     components: Components,

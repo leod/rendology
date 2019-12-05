@@ -1,7 +1,7 @@
 use log::info;
 
 use crate::object::ObjectBuffers;
-use crate::scene::{SceneCore, ShadedScenePass, ShadedScenePassSetup, ShadowPass};
+use crate::scene::SceneCore;
 use crate::shader::{self, ToUniforms};
 use crate::{fxaa, screen_quad, Context, DrawError, Instancing};
 
@@ -9,7 +9,8 @@ use crate::pipeline::config::Config;
 use crate::pipeline::deferred::{self, DeferredShading};
 use crate::pipeline::glow::{self, Glow};
 use crate::pipeline::render_pass::{
-    CompositionPassComponent, RenderPassComponent, ScenePassComponent,
+    CompositionPassComponent, RenderPassComponent, ScenePassComponent, ShadedScenePass,
+    ShadedScenePassSetup, ShadowPass,
 };
 use crate::pipeline::shaders;
 use crate::pipeline::shadow::{self, ShadowMapping};
