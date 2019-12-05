@@ -11,8 +11,8 @@ const WINDOW_SIZE: (u32, u32) = (1280, 720);
 struct Pipeline {
     rendology: rendology::Pipeline,
 
-    shadow_pass: Option<rendology::scene::ShadowPass<model::Core>>,
-    scene_pass: rendology::scene::ShadedScenePass<model::Core>,
+    shadow_pass: Option<rendology::ShadowPass<model::Core>>,
+    scene_pass: rendology::ShadedScenePass<model::Core>,
 
     cube: rendology::ObjectBuffers<rendology::object::Vertex>,
     cube_instancing: rendology::Instancing<model::Instance>,
@@ -28,7 +28,7 @@ impl Pipeline {
         let shadow_pass = rendology.create_shadow_pass::<_, model::Core>(facade)?;
         let scene_pass = rendology.create_shaded_scene_pass::<_, model::Core>(
             facade,
-            rendology::scene::ShadedScenePassSetup {
+            rendology::ShadedScenePassSetup {
                 draw_shadowed: true,
                 draw_glowing: false,
             },
