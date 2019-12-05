@@ -12,11 +12,12 @@ use log::info;
 
 use glium::{uniform, Surface};
 
+use crate::draw_instances::DrawInstances;
 use crate::fxaa::{self, FXAA};
 use crate::object::ObjectBuffers;
 use crate::scene::SceneCore;
 use crate::shader::ToUniforms;
-use crate::{shader, Context, DrawError, Instancing, Light, ScreenQuad};
+use crate::{shader, Context, DrawError, Light, ScreenQuad};
 
 use components::Components;
 
@@ -128,7 +129,8 @@ impl Pipeline {
         F: glium::backend::Facade,
         C: SceneCore,
     {
-        self.components.create_shaded_scene_pass(facade, scene_core, setup)
+        self.components
+            .create_shaded_scene_pass(facade, scene_core, setup)
     }
 
     pub fn start_frame<'a, F: glium::backend::Facade, S: glium::Surface>(
@@ -226,7 +228,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadowPassStep<'a, F, S> {
         self,
         pass: &Option<ShadowPass<C>>,
         object: &ObjectBuffers<C::Vertex>,
-        instancing: &Instancing<C::Instance>,
+        draw_instances: &impl DrawInstances<C::Instance>,
         params: &C::Params,
     ) -> Result<Self, DrawError> {
         if let (Some(pass), Some(shadow_mapping)) = (
@@ -236,7 +238,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadowPassStep<'a, F, S> {
             shadow_mapping.shadow_pass(
                 self.0.facade,
                 object,
-                instancing,
+                draw_instances,
                 &pass.program,
                 (&self.0.context, params),
             )?;
@@ -255,7 +257,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
         self,
         pass: &ShadedScenePass<C>,
         object: &ObjectBuffers<C::Vertex>,
-        instancing: &Instancing<C::Instance>,
+        draw_instances: &impl DrawInstances<C::Instance>,
         params: &C::Params,
         draw_params: &glium::DrawParameters,
     ) -> Result<Self, DrawError> {
@@ -272,9 +274,9 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
             &pipeline.scene_depth_texture,
         )?;
 
-        pipeline.components.scene_pass::<C, _>(
+        pipeline.components.scene_pass::<C, _, _>(
             object,
-            instancing,
+            draw_instances,
             &pass.program,
             (&self.0.context, params),
             draw_params,

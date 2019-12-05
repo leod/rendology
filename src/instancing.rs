@@ -1,5 +1,6 @@
 use log::info;
 
+use crate::draw_instances::DrawInstances;
 use crate::object::ObjectBuffers;
 use crate::shader::ToVertex;
 
@@ -60,7 +61,7 @@ pub struct Instancing<V: ToVertex> {
     buffers: Vec<Buffer<V::Vertex>>,
 }
 
-impl<V: ToVertex> Instancing<V> {
+impl<I: ToVertex> Instancing<I> {
     pub fn create<F: glium::backend::Facade>(facade: &F) -> Result<Self, CreationError> {
         let buffers = vec![Buffer::create(facade)?];
 
@@ -70,7 +71,7 @@ impl<V: ToVertex> Instancing<V> {
     pub fn update<'a, F: glium::backend::Facade>(
         &'a mut self,
         facade: &F,
-        mut instances: &[V::Vertex],
+        mut instances: &[I::Vertex],
     ) -> Result<(), CreationError> {
         // Write instance data into vertex buffers. We move through the buffers
         // that we have, filling them up sequentially.
@@ -95,8 +96,8 @@ impl<V: ToVertex> Instancing<V> {
                     self.buffers.push(Buffer::create(facade)?);
 
                     info!(
-                        "Created new vertex buffer for V={}",
-                        std::any::type_name::<V>()
+                        "Created new vertex buffer for `I={}`",
+                        std::any::type_name::<I>()
                     );
                 }
             } else {
@@ -108,15 +109,15 @@ impl<V: ToVertex> Instancing<V> {
 
         Ok(())
     }
+}
 
-    // TODO: Could make this more general by taking ay `MultiVerticesSource`
-    // instead of `ObjectBuffers<W>`.
-    pub fn draw<U, W, S>(
+impl<I: ToVertex> DrawInstances<I> for Instancing<I> {
+    fn draw_instances<U, W, S>(
         &self,
         object: &ObjectBuffers<W>,
         program: &glium::Program,
         uniforms: &U,
-        params: &glium::DrawParameters,
+        draw_params: &glium::DrawParameters,
         target: &mut S,
     ) -> Result<(), DrawError>
     where
@@ -142,7 +143,7 @@ impl<V: ToVertex> Instancing<V> {
 
             object
                 .index_buffer
-                .draw(vertices, program, uniforms, params, target)?;
+                .draw(vertices, program, uniforms, draw_params, target)?;
         }
 
         Ok(())

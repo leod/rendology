@@ -11,6 +11,7 @@ use nalgebra as na;
 
 use glium::{uniform, Surface};
 
+use crate::draw_instances::DrawInstances;
 use crate::object::{self, ObjectBuffers};
 use crate::shader::{self, ToUniforms, ToVertex};
 use crate::{screen_quad, Camera, Context, DrawError, Instancing, Object, ScreenQuad};
@@ -259,7 +260,7 @@ impl DeferredShading {
             ..draw_params.clone()
         };
 
-        self.light_instancing.draw(
+        self.light_instancing.draw_instances(
             &self.sphere,
             &self.light_object_program,
             &uniforms.to_uniforms(),
