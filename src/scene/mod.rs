@@ -1,6 +1,3 @@
-pub mod model;
-pub mod wind;
-
 use crate::shader::{self, ToVertex, UniformInput};
 use crate::Context;
 

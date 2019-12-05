@@ -1,6 +1,9 @@
 use std::time::Instant;
 
-use rendology::scene::model;
+use rendology::{
+    basic_object, BasicObject, Instancing, Light, Mesh, RenderList, ShadedScenePass,
+    ShadedScenePassSetup, ShadowPass,
+};
 
 use floating_duration::TimeAsFloat;
 use glium::{glutin, Surface};
@@ -11,32 +14,32 @@ const WINDOW_SIZE: (u32, u32) = (1280, 720);
 struct Pipeline {
     rendology: rendology::Pipeline,
 
-    shadow_pass: Option<rendology::ShadowPass<model::Core>>,
-    scene_pass: rendology::ShadedScenePass<model::Core>,
+    shadow_pass: Option<ShadowPass<basic_object::Core>>,
+    scene_pass: ShadedScenePass<basic_object::Core>,
 
-    cube: rendology::ObjectBuffers<rendology::object::Vertex>,
-    cube_instancing: rendology::Instancing<model::Instance>,
+    cube: Mesh<basic_object::Vertex>,
+    cube_instancing: Instancing<basic_object::Instance>,
 }
 
 impl Pipeline {
     fn create<F: glium::backend::Facade>(
         facade: &F,
-        config: &rendology::pipeline::Config,
+        config: &rendology::Config,
     ) -> Result<Self, rendology::pipeline::CreationError> {
         let rendology = rendology::Pipeline::create(facade, config, WINDOW_SIZE)?;
 
-        let shadow_pass = rendology.create_shadow_pass(facade, model::Core)?;
+        let shadow_pass = rendology.create_shadow_pass(facade, basic_object::Core)?;
         let scene_pass = rendology.create_shaded_scene_pass(
             facade,
-            model::Core,
-            rendology::ShadedScenePassSetup {
+            basic_object::Core,
+            ShadedScenePassSetup {
                 draw_shadowed: true,
                 draw_glowing: false,
             },
         )?;
 
-        let cube = rendology::Object::Cube.create_buffers(facade)?;
-        let cube_instancing = rendology::Instancing::<model::Instance>::create(facade)?;
+        let cube = BasicObject::Cube.create_mesh(facade)?;
+        let cube_instancing = Instancing::<basic_object::Instance>::create(facade)?;
 
         Ok(Pipeline {
             rendology,
@@ -51,8 +54,8 @@ impl Pipeline {
         &mut self,
         facade: &F,
         context: &rendology::Context,
-        lights: &[rendology::Light],
-        cubes: &rendology::RenderList<model::Instance>,
+        lights: &[Light],
+        cubes: &RenderList<basic_object::Instance>,
         target: &mut S,
     ) -> Result<(), rendology::DrawError> {
         self.cube_instancing.update(facade, cubes.as_slice())?;
@@ -70,12 +73,15 @@ impl Pipeline {
         self.rendology
             .start_frame(facade, context.clone(), target)?
             .shadow_pass()
-            .draw(&self.shadow_pass, &self.cube, &self.cube_instancing, &())?
+            .draw(
+                &self.shadow_pass,
+                &self.cube_instancing.as_drawable(&self.cube),
+                &(),
+            )?
             .shaded_scene_pass()
             .draw(
                 &self.scene_pass,
-                &self.cube,
-                &self.cube_instancing,
+                &self.cube_instancing.as_drawable(&self.cube),
                 &(),
                 &draw_params,
             )?
@@ -115,17 +121,17 @@ fn main() {
 
         let angle = start_time.elapsed().as_fractional_secs() as f32;
 
-        let mut render_list = rendology::RenderList::default();
-        render_list.add(model::Instance {
+        let mut render_list = RenderList::default();
+        render_list.add(basic_object::Instance {
             transform: na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 3.0))
                 * na::Matrix4::from_euler_angles(angle, angle, angle),
             color: na::Vector4::new(0.9, 0.9, 0.9, 1.0),
         });
-        render_list.add(model::Instance {
+        render_list.add(basic_object::Instance {
             transform: na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(10.0, 10.0, 0.1)),
             color: na::Vector4::new(0.0, 1.0, 0.0, 1.0),
         });
-        let lights = vec![rendology::Light {
+        let lights = vec![Light {
             position: na::Point3::new(10.0, 10.0, 10.0),
             attenuation: na::Vector3::new(1.0, 0.0, 0.0),
             color: na::Vector3::new(1.0, 1.0, 1.0),

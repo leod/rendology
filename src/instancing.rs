@@ -1,8 +1,7 @@
 use log::info;
 
-use crate::draw_instances::DrawInstances;
-use crate::object::ObjectBuffers;
 use crate::shader::ToVertex;
+use crate::{Drawable, Mesh};
 
 pub use crate::error::{CreationError, DrawError};
 
@@ -68,8 +67,8 @@ impl<I: ToVertex> Instancing<I> {
         Ok(Self { buffers })
     }
 
-    pub fn update<'a, F: glium::backend::Facade>(
-        &'a mut self,
+    pub fn update<F: glium::backend::Facade>(
+        &mut self,
         facade: &F,
         mut instances: &[I::Vertex],
     ) -> Result<(), CreationError> {
@@ -109,12 +108,24 @@ impl<I: ToVertex> Instancing<I> {
 
         Ok(())
     }
+
+    pub fn as_drawable<'a, V: glium::vertex::Vertex>(
+        &'a self,
+        mesh: &'a Mesh<V>,
+    ) -> impl Drawable<I, V> + 'a {
+        DrawableImpl(self, mesh)
+    }
 }
 
-impl<I: ToVertex> DrawInstances<I> for Instancing<I> {
-    fn draw_instances<U, W, S>(
+struct DrawableImpl<'a, I: ToVertex, V: Copy>(&'a Instancing<I>, &'a Mesh<V>);
+
+impl<'a, I, V> Drawable<I, V> for DrawableImpl<'a, I, V>
+where
+    I: ToVertex,
+    V: glium::vertex::Vertex,
+{
+    fn draw<U, S>(
         &self,
-        object: &ObjectBuffers<W>,
         program: &glium::Program,
         uniforms: &U,
         draw_params: &glium::DrawParameters,
@@ -122,10 +133,9 @@ impl<I: ToVertex> DrawInstances<I> for Instancing<I> {
     ) -> Result<(), DrawError>
     where
         U: glium::uniforms::Uniforms,
-        W: glium::vertex::Vertex,
         S: glium::Surface,
     {
-        for buffer in self.buffers.iter() {
+        for buffer in self.0.buffers.iter() {
             if buffer.num_used == 0 {
                 // Buffers are filled sequentially, so we can exit early here.
                 return Ok(());
@@ -139,9 +149,9 @@ impl<I: ToVertex> DrawInstances<I> for Instancing<I> {
                 .per_instance()
                 .map_err(|_| DrawError::InstancingNotSupported)?;
 
-            let vertices = (&object.vertex_buffer, per_instance);
+            let vertices = (&self.1.vertex_buffer, per_instance);
 
-            object
+            self.1
                 .index_buffer
                 .draw(vertices, program, uniforms, draw_params, target)?;
         }

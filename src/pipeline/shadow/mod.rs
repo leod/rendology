@@ -11,11 +11,9 @@ use nalgebra as na;
 
 use glium::{uniform, Surface};
 
-use crate::draw_instances::DrawInstances;
-use crate::object::ObjectBuffers;
 use crate::pipeline::{RenderPassComponent, ScenePassComponent};
 use crate::shader::{self, ToUniforms, ToVertex};
-use crate::{Camera, Context, DrawError};
+use crate::{Camera, Context, DrawError, Drawable, Mesh};
 
 pub use crate::CreationError;
 
@@ -98,18 +96,16 @@ impl ShadowMapping {
     }
 
     /// Render scene from the light's point of view into depth buffer.
-    pub fn shadow_pass<F, V, I, P>(
+    pub fn shadow_pass<F, I, V, P>(
         &self,
         facade: &F,
-        object: &ObjectBuffers<V>,
-        draw_instances: &impl DrawInstances<I>,
+        drawable: &impl Drawable<I, V>,
         program: &glium::Program,
         params: (&Context, P),
     ) -> Result<(), DrawError>
     where
         F: glium::backend::Facade,
         V: glium::vertex::Vertex,
-        I: ToVertex,
         P: ToUniforms,
     {
         let mut shadow_target =
@@ -139,8 +135,7 @@ impl ShadowMapping {
             ..Default::default()
         };
 
-        draw_instances.draw_instances(
-            object,
+        drawable.draw(
             program,
             &(light_context, params.1).to_uniforms(),
             &draw_params,
