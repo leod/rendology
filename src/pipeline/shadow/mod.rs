@@ -11,10 +11,11 @@ use nalgebra as na;
 
 use glium::{uniform, Surface};
 
+use crate::draw_instances::DrawInstances;
 use crate::object::ObjectBuffers;
 use crate::pipeline::{RenderPassComponent, ScenePassComponent};
 use crate::shader::{self, ToUniforms, ToVertex};
-use crate::{Camera, Context, DrawError, Instancing};
+use crate::{Camera, Context, DrawError};
 
 pub use crate::CreationError;
 
@@ -101,7 +102,7 @@ impl ShadowMapping {
         &self,
         facade: &F,
         object: &ObjectBuffers<V>,
-        instancing: &Instancing<I>,
+        draw_instances: &impl DrawInstances<I>,
         program: &glium::Program,
         params: (&Context, P),
     ) -> Result<(), DrawError>
@@ -138,7 +139,7 @@ impl ShadowMapping {
             ..Default::default()
         };
 
-        instancing.draw(
+        draw_instances.draw_instances(
             object,
             program,
             &(light_context, params.1).to_uniforms(),

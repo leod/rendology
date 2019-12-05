@@ -1,6 +1,7 @@
 #[macro_use]
 pub mod shader;
 pub mod camera;
+pub mod draw_instances;
 pub mod error;
 pub mod fxaa;
 pub mod instancing;

@@ -1,9 +1,10 @@
 use log::info;
 
+use crate::draw_instances::DrawInstances;
 use crate::object::ObjectBuffers;
 use crate::scene::SceneCore;
 use crate::shader::{self, ToUniforms};
-use crate::{fxaa, screen_quad, Context, DrawError, Instancing};
+use crate::{fxaa, screen_quad, Context, DrawError};
 
 use crate::pipeline::config::Config;
 use crate::pipeline::deferred::{self, DeferredShading};
@@ -69,7 +70,10 @@ impl Components {
         self.shadow_mapping
             .as_ref()
             .map(|shadow_mapping| {
-                info!("Creating shadow pass for C={}", std::any::type_name::<C>());
+                info!(
+                    "Creating shadow pass for `C={}`",
+                    std::any::type_name::<C>()
+                );
 
                 let shader_core =
                     shadow_mapping.shadow_pass_core_transform(scene_core.scene_core());
@@ -93,7 +97,7 @@ impl Components {
         F: glium::backend::Facade,
         C: SceneCore,
     {
-        info!("Creating scene pass for C={}", std::any::type_name::<C>());
+        info!("Creating scene pass for `C={}`", std::any::type_name::<C>());
 
         let mut shader_core = scene_core.scene_core();
 
@@ -167,10 +171,10 @@ impl Components {
         Ok(())
     }
 
-    pub fn scene_pass<C, S>(
+    pub fn scene_pass<C, D, S>(
         &self,
         object: &ObjectBuffers<C::Vertex>,
-        instancing: &Instancing<C::Instance>,
+        draw_instances: &D,
         program: &glium::Program,
         params: (&Context, &C::Params),
         draw_params: &glium::DrawParameters,
@@ -178,6 +182,7 @@ impl Components {
     ) -> Result<(), DrawError>
     where
         C: SceneCore,
+        D: DrawInstances<C::Instance>,
         S: glium::Surface,
     {
         let uniforms = (
@@ -187,7 +192,7 @@ impl Components {
                 .map(|c| c.scene_pass_uniforms(params.0)),
         );
 
-        instancing.draw(
+        draw_instances.draw_instances(
             object,
             program,
             &uniforms.to_uniforms(),

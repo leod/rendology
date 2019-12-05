@@ -116,12 +116,12 @@ fn main() {
         let angle = start_time.elapsed().as_fractional_secs() as f32;
 
         let mut render_list = rendology::RenderList::default();
-        render_list.add(rendology::scene::model::Instance {
+        render_list.add(model::Instance {
             transform: na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 3.0))
                 * na::Matrix4::from_euler_angles(angle, angle, angle),
             color: na::Vector4::new(0.9, 0.9, 0.9, 1.0),
         });
-        render_list.add(rendology::scene::model::Instance {
+        render_list.add(model::Instance {
             transform: na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(10.0, 10.0, 0.1)),
             color: na::Vector4::new(0.0, 1.0, 0.0, 1.0),
         });
