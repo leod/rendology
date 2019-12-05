@@ -39,7 +39,7 @@ impl Pipeline {
         )?;
 
         let cube = BasicObject::Cube.create_mesh(facade)?;
-        let cube_instancing = Instancing::<basic_object::Instance>::create(facade)?;
+        let cube_instancing = Instancing::create(facade)?;
 
         Ok(Pipeline {
             rendology,

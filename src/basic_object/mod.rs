@@ -8,7 +8,8 @@ use glium::{self, implement_vertex};
 use log::info;
 use num_traits::{FromPrimitive, ToPrimitive};
 
-use crate::{CreationError, DrawError, Mesh};
+use crate::shader::ToVertex;
+use crate::{CreationError, DrawError, Drawable, Mesh};
 
 pub use mesh::{load_wavefront, mesh_from_slices, CUBE_INDICES, CUBE_NORMALS, CUBE_POSITIONS};
 pub use scene::{Core, Instance};
@@ -74,15 +75,17 @@ impl BasicObject {
     }
 }
 
-/*pub struct RenderList<I: ToVertex>(Vec<crate::RenderList<I>>);
+pub struct RenderList<I: ToVertex>(Vec<crate::RenderList<I>>);
 
-impl<I: ToVertex> Default for RenderList<I> {
+impl<I: ToVertex + Clone> Default for RenderList<I> {
     fn default() -> Self {
         Self(vec![Default::default(); NUM_TYPES])
     }
 }
 
 impl<I: ToVertex> Index<BasicObject> for RenderList<I> {
+    type Output = crate::RenderList<I>;
+
     fn index(&self, object: BasicObject) -> &crate::RenderList<I> {
         // Safe to unwrap since `BasicObject::to_usize()` never fails.
         &self.0[object.to_usize().unwrap()]
@@ -105,30 +108,40 @@ impl<I: ToVertex> Instancing<I> {
         render_list: &RenderList<I>,
     ) -> Result<(), CreationError> {
         for i in 0..NUM_TYPES {
-            self.0.update(render_list.0[i].to_slice())?;
+            self.0[i].update(facade, render_list.0[i].as_slice())?;
         }
 
         Ok(())
     }
 
-    pub fn as_draw_instances(&self, resources: &Resources) -> DrawInstances<'_, I> {
-        DrawInstances(&self, resources)
+    pub fn as_drawable<'a>(&'a self, resources: &'a Resources) -> impl Drawable<I, Vertex> + 'a {
+        DrawableImpl(self, resources)
     }
 }
 
-pub struct DrawInstances<'a, I: ToVertex>(&'a Instancing<I>, &'a Resources);
+struct DrawableImpl<'a, I: ToVertex>(&'a Instancing<I>, &'a Resources);
 
-impl<'a, I: ToVertex> DrawInstances<I> for DrawInstancing<'a, I> {
-    fn draw_instances<U, W, S>(
+impl<'a, I: ToVertex> Drawable<I, Vertex> for DrawableImpl<'a, I> {
+    fn draw<U, S>(
         &self,
-        object: &Mesh<W>,
         program: &glium::Program,
         uniforms: &U,
         draw_params: &glium::DrawParameters,
         target: &mut S,
-    ) -> Result<(), DrawError> {
+    ) -> Result<(), DrawError>
+    where
+        U: glium::uniforms::Uniforms,
+        S: glium::Surface,
+    {
         for i in 0..NUM_TYPES {
-            self.0[i].draw_instances(
+            (self.0).0[i].as_drawable(&self.1.meshes[i]).draw(
+                program,
+                uniforms,
+                draw_params,
+                target,
+            )?;
         }
+
+        Ok(())
     }
-}*/
+}
