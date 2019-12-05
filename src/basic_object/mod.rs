@@ -100,7 +100,7 @@ impl<I: ToVertex> IndexMut<BasicObject> for RenderList<I> {
 pub struct Instancing<I: ToVertex>(Vec<crate::Instancing<I>>);
 
 impl<I: ToVertex> Instancing<I> {
-    pub fn update<'a, F: glium::backend::Facade>(
+    pub fn update<F: glium::backend::Facade>(
         &mut self,
         facade: &F,
         render_list: &RenderList<I>,
