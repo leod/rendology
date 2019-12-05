@@ -2,7 +2,7 @@ use log::info;
 
 use crate::object::ObjectBuffers;
 use crate::scene::{SceneCore, ShadedScenePass, ShadedScenePassSetup, ShadowPass};
-use crate::shader::{self, ToUniforms, ToVertex};
+use crate::shader::{self, ToUniforms};
 use crate::{fxaa, screen_quad, Context, DrawError, Instancing};
 
 use crate::pipeline::config::Config;
@@ -166,7 +166,7 @@ impl Components {
     pub fn scene_pass<C, S>(
         &self,
         object: &ObjectBuffers<C::Vertex>,
-        instancing: &Instancing<<C::Instance as ToVertex>::Vertex>,
+        instancing: &Instancing<C::Instance>,
         program: &glium::Program,
         params: (&Context, &C::Params),
         draw_params: &glium::DrawParameters,

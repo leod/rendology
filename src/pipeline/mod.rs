@@ -15,7 +15,7 @@ use glium::{uniform, Surface};
 use crate::fxaa::{self, FXAA};
 use crate::object::ObjectBuffers;
 use crate::scene::{SceneCore, ShadedScenePass, ShadedScenePassSetup, ShadowPass};
-use crate::shader::{ToUniforms, ToVertex};
+use crate::shader::ToUniforms;
 use crate::{shader, Context, DrawError, Instancing, Light, ScreenQuad};
 
 use components::Components;
@@ -211,7 +211,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadowPassStep<'a, F, S> {
         self,
         pass: &Option<ShadowPass<C>>,
         object: &ObjectBuffers<C::Vertex>,
-        instancing: &Instancing<<C::Instance as ToVertex>::Vertex>,
+        instancing: &Instancing<C::Instance>,
         params: &C::Params,
     ) -> Result<Self, DrawError> {
         if let (Some(pass), Some(shadow_mapping)) = (
@@ -240,7 +240,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
         self,
         pass: &ShadedScenePass<C>,
         object: &ObjectBuffers<C::Vertex>,
-        instancing: &Instancing<<C::Instance as ToVertex>::Vertex>,
+        instancing: &Instancing<C::Instance>,
         params: &C::Params,
         draw_params: &glium::DrawParameters,
     ) -> Result<Self, DrawError> {

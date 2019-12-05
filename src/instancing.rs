@@ -1,6 +1,7 @@
 use log::info;
 
 use crate::object::ObjectBuffers;
+use crate::shader::ToVertex;
 
 pub use crate::error::{CreationError, DrawError};
 
@@ -55,11 +56,11 @@ where
     }
 }
 
-pub struct Instancing<V: Copy> {
-    buffers: Vec<Buffer<V>>,
+pub struct Instancing<V: ToVertex> {
+    buffers: Vec<Buffer<V::Vertex>>,
 }
 
-impl<V: glium::vertex::Vertex> Instancing<V> {
+impl<V: ToVertex> Instancing<V> {
     pub fn create<F: glium::backend::Facade>(facade: &F) -> Result<Self, CreationError> {
         let buffers = vec![Buffer::create(facade)?];
 
@@ -69,7 +70,7 @@ impl<V: glium::vertex::Vertex> Instancing<V> {
     pub fn update<'a, F: glium::backend::Facade>(
         &'a mut self,
         facade: &F,
-        mut instances: &[V],
+        mut instances: &[V::Vertex],
     ) -> Result<(), CreationError> {
         // Write instance data into vertex buffers. We move through the buffers
         // that we have, filling them up sequentially.
