@@ -269,11 +269,20 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
             &pipeline.scene_depth_texture,
         )?;
 
+        let draw_params = glium::DrawParameters {
+            depth: glium::Depth {
+                test: glium::DepthTest::IfLessOrEqual,
+                write: true,
+                ..Default::default()
+            },
+            ..draw_params.clone()
+        };
+
         pipeline.components.scene_pass::<C, _, _>(
             drawable,
             &pass.program,
             (&self.0.context, params),
-            draw_params,
+            &draw_params,
             &mut framebuffer,
         )?;
 
