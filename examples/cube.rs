@@ -62,11 +62,6 @@ impl Pipeline {
 
         let draw_params = glium::DrawParameters {
             backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
-            depth: glium::Depth {
-                test: glium::DepthTest::IfLessOrEqual,
-                write: true,
-                ..Default::default()
-            },
             ..Default::default()
         };
 
@@ -131,6 +126,7 @@ fn main() {
             transform: na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(10.0, 10.0, 0.1)),
             color: na::Vector4::new(0.0, 1.0, 0.0, 1.0),
         });
+
         let lights = vec![Light {
             position: na::Point3::new(10.0, 10.0, 10.0),
             attenuation: na::Vector3::new(1.0, 0.0, 0.0),
@@ -140,37 +136,47 @@ fn main() {
         }];
 
         let mut target = display.draw();
-
-        let camera = rendology::Camera {
-            view: na::Matrix4::look_at_rh(
-                &na::Point3::new(9.0, -5.0, 7.0),
-                &na::Point3::new(0.0, 0.0, 0.0),
-                &na::Vector3::new(0.0, 0.0, 1.0),
-            ),
-            projection: na::Perspective3::new(
-                target.get_dimensions().0 as f32 / target.get_dimensions().1 as f32,
-                60.0f32.to_radians(),
-                0.1,
-                1000.0,
-            )
-            .to_homogeneous(),
-            viewport: na::Vector4::new(
-                0.0,
-                0.0,
-                target.get_dimensions().0 as f32,
-                target.get_dimensions().1 as f32,
-            ),
-        };
-        let context = rendology::Context {
-            camera,
-            main_light_pos: na::Point3::new(10.0, 10.0, 10.0),
-            main_light_center: na::Point3::new(0.0, 0.0, 0.0),
-        };
+        let render_context = render_context(target.get_dimensions());
 
         pipeline
-            .draw_frame(&display, &context, &lights, &render_list, &mut target)
+            .draw_frame(
+                &display,
+                &render_context,
+                &lights,
+                &render_list,
+                &mut target,
+            )
             .unwrap();
 
         target.finish().unwrap();
+    }
+}
+
+fn render_context(target_size: (u32, u32)) -> rendology::Context {
+    let camera = rendology::Camera {
+        view: na::Matrix4::look_at_rh(
+            &na::Point3::new(9.0, -5.0, 7.0),
+            &na::Point3::new(0.0, 0.0, 0.0),
+            &na::Vector3::new(0.0, 0.0, 1.0),
+        ),
+        projection: na::Perspective3::new(
+            target_size.0 as f32 / target_size.1 as f32,
+            60.0f32.to_radians(),
+            0.1,
+            1000.0,
+        )
+        .to_homogeneous(),
+        viewport: na::Vector4::new(
+            0.0,
+            0.0,
+            target_size.0 as f32,
+            target_size.1 as f32,
+        ),
+    };
+
+    rendology::Context {
+        camera,
+        main_light_pos: na::Point3::new(10.0, 10.0, 10.0),
+        main_light_center: na::Point3::new(0.0, 0.0, 0.0),
     }
 }
