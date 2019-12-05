@@ -21,13 +21,14 @@ struct Pipeline {
 impl Pipeline {
     fn create<F: glium::backend::Facade>(
         facade: &F,
-        config: rendology::pipeline::Config,
+        config: &rendology::pipeline::Config,
     ) -> Result<Self, rendology::pipeline::CreationError> {
-        let rendology = rendology::Pipeline::create(facade, &config, WINDOW_SIZE)?;
+        let rendology = rendology::Pipeline::create(facade, config, WINDOW_SIZE)?;
 
-        let shadow_pass = rendology.create_shadow_pass::<_, model::Core>(facade)?;
-        let scene_pass = rendology.create_shaded_scene_pass::<_, model::Core>(
+        let shadow_pass = rendology.create_shadow_pass(facade, model::Core)?;
+        let scene_pass = rendology.create_shaded_scene_pass(
             facade,
+            model::Core,
             rendology::ShadedScenePassSetup {
                 draw_shadowed: true,
                 draw_glowing: false,
@@ -97,7 +98,7 @@ fn main() {
     };
 
     // Initialize rendology pipeline
-    let mut pipeline = Pipeline::create(&display, Default::default()).unwrap();
+    let mut pipeline = Pipeline::create(&display, &Default::default()).unwrap();
 
     let start_time = Instant::now();
     let mut quit = false;

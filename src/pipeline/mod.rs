@@ -109,24 +109,26 @@ impl Pipeline {
     pub fn create_shadow_pass<F, C>(
         &self,
         facade: &F,
+        scene_core: C,
     ) -> Result<Option<ShadowPass<C>>, crate::CreationError>
     where
         F: glium::backend::Facade,
         C: SceneCore,
     {
-        self.components.create_shadow_pass(facade)
+        self.components.create_shadow_pass(facade, scene_core)
     }
 
     pub fn create_shaded_scene_pass<F, C>(
         &self,
         facade: &F,
+        scene_core: C,
         setup: ShadedScenePassSetup,
     ) -> Result<ShadedScenePass<C>, crate::CreationError>
     where
         F: glium::backend::Facade,
         C: SceneCore,
     {
-        self.components.create_shaded_scene_pass(facade, setup)
+        self.components.create_shaded_scene_pass(facade, scene_core, setup)
     }
 
     pub fn start_frame<'a, F: glium::backend::Facade, S: glium::Surface>(
