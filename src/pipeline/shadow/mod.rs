@@ -11,9 +11,10 @@ use nalgebra as na;
 
 use glium::{uniform, Surface};
 
-use crate::pipeline::{Context, RenderPass, ScenePassComponent};
-use crate::shader::{self, ToUniforms};
-use crate::{scene, Camera, DrawError, Instancing, Resources};
+use crate::object::ObjectBuffers;
+use crate::pipeline::{RenderPassComponent, ScenePassComponent};
+use crate::shader::{self, ToUniforms, ToVertex};
+use crate::{Camera, Context, DrawError, Instancing};
 
 pub use crate::CreationError;
 
@@ -31,11 +32,10 @@ impl Default for Config {
 }
 
 pub struct ShadowMapping {
-    shadow_map_program: glium::Program,
     shadow_texture: glium::texture::DepthTexture2d,
 }
 
-impl RenderPass for ShadowMapping {
+impl RenderPassComponent for ShadowMapping {
     fn clear_buffers<F: glium::backend::Facade>(&self, facade: &F) -> Result<(), DrawError> {
         let mut shadow_target =
             glium::framebuffer::SimpleFrameBuffer::depth_only(facade, &self.shadow_texture)?;
@@ -51,26 +51,20 @@ impl ScenePassComponent for ShadowMapping {
     ///
     /// Note that the transformed shader will require additional uniforms,
     /// which are given by `ShadowMapping::scene_pass_uniforms`.
-    fn core_transform<P, V>(
+    fn core_transform<P, I, V>(
         &self,
-        core: shader::Core<Context, P, V>,
-    ) -> shader::Core<Context, P, V> {
+        core: shader::Core<(Context, P), I, V>,
+    ) -> shader::Core<(Context, P), I, V> {
         shaders::render_shadowed_core_transform(core)
     }
 }
 
 impl ShadowMapping {
-    #[rustfmt::skip]
     pub fn create<F: glium::backend::Facade>(
         facade: &F,
         config: &Config,
     ) -> Result<ShadowMapping, CreationError> {
-        // Shader for creating the shadow map from light source's perspective
-        info!("Creating shadow map program");
-        let shadow_map_program = shaders::depth_map_core_transform(
-            scene::model::scene_core(),
-        ).build_program(facade, shader::InstancingMode::Vertex)?;
-
+        info!("Creating shadow texture");
         let shadow_texture = glium::texture::DepthTexture2d::empty(
             facade,
             config.shadow_map_size.x,
@@ -79,10 +73,7 @@ impl ShadowMapping {
 
         info!("Shadow mapping initialized");
 
-        Ok(ShadowMapping {
-            shadow_map_program,
-            shadow_texture,
-        })
+        Ok(ShadowMapping { shadow_texture })
     }
 
     fn light_projection(&self) -> na::Matrix4<f32> {
@@ -98,30 +89,46 @@ impl ShadowMapping {
         )
     }
 
+    pub fn shadow_pass_core_transform<P, I, V>(
+        &self,
+        core: shader::Core<P, I, V>,
+    ) -> shader::Core<P, I, V> {
+        shaders::depth_map_core_transform(core)
+    }
+
     /// Render scene from the light's point of view into depth buffer.
-    pub fn shadow_pass<F: glium::backend::Facade>(
+    pub fn shadow_pass<F, V, I, P>(
         &self,
         facade: &F,
-        resources: &Resources,
-        context: &Context,
-        instancing: &Instancing<scene::model::Params>,
-        instancing_glow: &Instancing<scene::model::Params>,
-    ) -> Result<(), DrawError> {
+        object: &ObjectBuffers<V>,
+        instancing: &Instancing<I>,
+        program: &glium::Program,
+        params: (&Context, P),
+    ) -> Result<(), DrawError>
+    where
+        F: glium::backend::Facade,
+        V: glium::vertex::Vertex,
+        I: ToVertex,
+        P: ToUniforms,
+    {
         let mut shadow_target =
             glium::framebuffer::SimpleFrameBuffer::depth_only(facade, &self.shadow_texture)?;
 
         let light_projection = self.light_projection();
-        let light_view = self.light_view(context);
+        let light_view = self.light_view(params.0);
 
         let camera = Camera {
-            viewport: na::Vector4::new(0.0, 0.0, 0.0, 0.0), // dummy value
+            viewport: params.0.camera.viewport,
             projection: light_projection,
             view: light_view,
         };
 
-        let light_context = Context { camera, ..*context };
+        let light_context = Context {
+            camera,
+            ..*params.0
+        };
 
-        let params = glium::DrawParameters {
+        let draw_params = glium::DrawParameters {
             backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
             depth: glium::Depth {
                 test: glium::DepthTest::IfLessOrEqual,
@@ -132,21 +139,12 @@ impl ShadowMapping {
         };
 
         instancing.draw(
-            resources,
-            &self.shadow_map_program,
-            &light_context.to_uniforms(),
-            &params,
+            object,
+            program,
+            &(light_context, params.1).to_uniforms(),
+            &draw_params,
             &mut shadow_target,
-        )?;
-        instancing_glow.draw(
-            resources,
-            &self.shadow_map_program,
-            &light_context.to_uniforms(),
-            &params,
-            &mut shadow_target,
-        )?;
-
-        Ok(())
+        )
     }
 
     /// Returns uniforms for binding the shadow map during scene pass.

@@ -17,3 +17,4 @@ coarse-prof = "0.2"
 
 [dev-dependencies]
 floating-duration = "0.1"
+simple_logger = "1.0"

@@ -1,24 +1,15 @@
-use std::ops::Range;
-
 use log::info;
 
-use num_traits::{FromPrimitive, ToPrimitive};
-
+use crate::object::ObjectBuffers;
 use crate::shader::ToVertex;
-use crate::{Instance, Object, Resources};
 
 pub use crate::error::{CreationError, DrawError};
 
-pub const INSTANCES_PER_BUFFER: usize = 10000;
+pub const INSTANCES_PER_BUFFER: usize = 1000;
 
-struct Entry {
-    object: Object,
-    range: Range<usize>,
-}
-
-struct Buffer<V: glium::vertex::Vertex> {
+struct Buffer<V: Copy> {
     buffer: glium::VertexBuffer<V>,
-    entries: Vec<Entry>,
+    num_used: usize,
 }
 
 impl<V> Buffer<V>
@@ -30,25 +21,21 @@ where
 
         Ok(Self {
             buffer,
-            entries: Vec::new(),
+            num_used: 0,
         })
     }
 
     fn clear(&mut self) {
-        self.entries.clear();
+        self.num_used = 0;
     }
 
     fn remaining_capacity(&self) -> usize {
-        if let Some(last) = self.entries.last() {
-            assert!(last.range.end <= self.buffer.len());
+        assert!(self.num_used <= self.buffer.len());
 
-            self.buffer.len() - last.range.end
-        } else {
-            self.buffer.len()
-        }
+        self.buffer.len() - self.num_used
     }
 
-    fn append(&mut self, object: Object, vertices: &[V]) -> usize {
+    fn append(&mut self, vertices: &[V]) -> usize {
         let capacity = self.remaining_capacity();
 
         if capacity == 0 {
@@ -63,83 +50,28 @@ where
         let slice = self.buffer.slice_mut(range.clone()).unwrap();
         slice.write(&vertices[0..num_to_write]);
 
-        self.entries.push(Entry { object, range });
+        self.num_used += num_to_write;
 
         num_to_write
     }
-
-    fn draw<S, U>(
-        &self,
-        resources: &Resources,
-        program: &glium::Program,
-        uniforms: &U,
-        params: &glium::DrawParameters,
-        target: &mut S,
-    ) -> Result<(), DrawError>
-    where
-        S: glium::Surface,
-        U: glium::uniforms::Uniforms,
-    {
-        for entry in self.entries.iter() {
-            let buffers = resources.get_object_buffers(entry.object);
-
-            // Safe to unwrap here, since range is given.
-            let instances = self.buffer.slice(entry.range.clone()).unwrap();
-
-            // TODO: Fall back to non-instanced rendering if not supported?
-            let per_instance = instances
-                .per_instance()
-                .map_err(|_| DrawError::InstancingNotSupported)?;
-
-            let vertices = (&buffers.vertex_buffer, per_instance);
-
-            buffers
-                .index_buffer
-                .draw(vertices, program, uniforms, params, target)?;
-        }
-
-        Ok(())
-    }
 }
 
-pub struct Instancing<I: ToVertex> {
-    buffers: Vec<Buffer<I::Vertex>>,
-    buckets: Vec<Vec<I::Vertex>>,
+pub struct Instancing<V: ToVertex> {
+    buffers: Vec<Buffer<V::Vertex>>,
 }
 
-impl<I> Instancing<I>
-where
-    I: ToVertex + Clone,
-{
+impl<V: ToVertex> Instancing<V> {
     pub fn create<F: glium::backend::Facade>(facade: &F) -> Result<Self, CreationError> {
         let buffers = vec![Buffer::create(facade)?];
 
-        let mut buckets = Vec::new();
-        for _ in 0..Object::NumTypes as usize {
-            buckets.push(Vec::new());
-        }
-
-        Ok(Self { buffers, buckets })
+        Ok(Self { buffers })
     }
 
     pub fn update<'a, F: glium::backend::Facade>(
         &'a mut self,
         facade: &F,
-        instances: &[Instance<I>],
-        //instances: impl Iterator<Item=&'a Instance<I>>,
+        mut instances: &[V::Vertex],
     ) -> Result<(), CreationError> {
-        // Sort the instances into buckets according to their Object (i.e. mesh)
-        for bucket in &mut self.buckets {
-            bucket.clear();
-        }
-
-        for instance in instances {
-            // Safe to unwrap here.
-            let index = instance.object.to_usize().unwrap();
-
-            self.buckets[index].push(instance.params.to_vertex());
-        }
-
         // Write instance data into vertex buffers. We move through the buffers
         // that we have, filling them up sequentially.
         for buffer in &mut self.buffers {
@@ -148,69 +80,69 @@ where
 
         let mut cur_buffer = 0;
 
-        for i in 0..Object::NumTypes as usize {
-            if self.buckets[i].is_empty() {
-                continue;
-            }
+        while !instances.is_empty() {
+            // Write as much as possible into the current buffer.
+            let num_written = self.buffers[cur_buffer].append(instances);
 
-            // Safe to unwrap here, since we iterate within the range.
-            let object: Object = FromPrimitive::from_usize(i).unwrap();
+            if num_written == 0 {
+                // We had instance data to write, but nothing was written
+                // Move on to the next buffer.
+                cur_buffer += 1;
 
-            let mut vertices = &self.buckets[i][0..];
+                if cur_buffer == self.buffers.len() {
+                    // We have reached past the last buffer. Create a new
+                    // buffer to write into.
+                    self.buffers.push(Buffer::create(facade)?);
 
-            while !vertices.is_empty() {
-                // Write as much as possible into the current buffer.
-                let num_written = self.buffers[cur_buffer].append(object, vertices);
-
-                if num_written == 0 {
-                    // We had vertex data to write, but nothing was written
-                    // Move on to the next buffer.
-                    cur_buffer += 1;
-
-                    if cur_buffer == self.buffers.len() {
-                        // We have reached past the last buffer. Create a new
-                        // buffer to write into.
-                        self.buffers.push(Buffer::create(facade)?);
-
-                        info!(
-                            "Created new vertex buffer for I={}.\
-                             Have {} instances of type {:?}, and now {} buffers.",
-                            std::any::type_name::<I>(),
-                            self.buckets[i].len(),
-                            object,
-                            cur_buffer + 1,
-                        );
-                    }
-                } else {
-                    // We have written something into the buffer, reduce slice
-                    // accordingly.
-                    vertices = &vertices[num_written..];
+                    info!(
+                        "Created new vertex buffer for V={}",
+                        std::any::type_name::<V>()
+                    );
                 }
+            } else {
+                // We have written something into the buffer, reduce slice
+                // accordingly.
+                instances = &instances[num_written..];
             }
         }
 
         Ok(())
     }
-}
 
-impl<I> Instancing<I>
-where
-    I: ToVertex,
-{
-    pub fn draw<S, U>(
+    // TODO: Could make this more general by taking ay `MultiVerticesSource`
+    // instead of `ObjectBuffers<W>`.
+    pub fn draw<U, W, S>(
         &self,
-        resources: &Resources,
+        object: &ObjectBuffers<W>,
         program: &glium::Program,
         uniforms: &U,
         params: &glium::DrawParameters,
         target: &mut S,
     ) -> Result<(), DrawError>
     where
-        S: glium::Surface,
         U: glium::uniforms::Uniforms,
+        W: glium::vertex::Vertex,
+        S: glium::Surface,
     {
         for buffer in self.buffers.iter() {
-            buffer.draw(resources, program, uniforms, params, target)?;
+            if buffer.num_used == 0 {
+                // Buffers are filled sequentially, so we can exit early here.
+                return Ok(());
+            }
+
+            // Safe to unwrap here, since we assure that `num_used < buffer.len()`.
+            let instances = buffer.buffer.slice(0..buffer.num_used).unwrap();
+
+            // TODO: Fall back to non-instanced rendering if not supported?
+            let per_instance = instances
+                .per_instance()
+                .map_err(|_| DrawError::InstancingNotSupported)?;
+
+            let vertices = (&object.vertex_buffer, per_instance);
+
+            object
+                .index_buffer
+                .draw(vertices, program, uniforms, params, target)?;
         }
 
         Ok(())

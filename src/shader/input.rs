@@ -33,6 +33,14 @@ pub trait UniformInput: ToUniforms {
     fn uniform_input_defs() -> Vec<(String, UniformType)>;
 }
 
+impl<V: glium::vertex::Vertex> ToVertex for V {
+    type Vertex = Self;
+
+    fn to_vertex(&self) -> Self {
+        *self
+    }
+}
+
 // The following type aliases have the same name as variants in glium's
 // `UniformValue`. This allows us to use the same macro parameters foor
 // implementing both `ToUniforms` and `ToVertex`. Yeah, it's hacky though.
