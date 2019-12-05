@@ -12,8 +12,8 @@ use nalgebra as na;
 use glium::{uniform, Surface};
 
 use crate::pipeline::{RenderPassComponent, ScenePassComponent};
-use crate::shader::{self, ToUniforms, ToVertex};
-use crate::{Camera, Context, DrawError, Drawable, Mesh};
+use crate::shader::{self, ToUniforms};
+use crate::{Camera, Context, DrawError, Drawable};
 
 pub use crate::CreationError;
 

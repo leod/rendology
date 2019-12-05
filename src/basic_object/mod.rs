@@ -2,10 +2,8 @@ mod mesh;
 mod scene;
 
 use std::ops::{Index, IndexMut};
-use std::path::Path;
 
 use glium::{self, implement_vertex};
-use log::info;
 use num_traits::{FromPrimitive, ToPrimitive};
 
 use crate::shader::ToVertex;
@@ -51,7 +49,7 @@ impl Resources {
 
         for i in 0..NUM_TYPES {
             // Safe to unwrap here, since we iterate within the range
-            let object: BasicObject = num_traits::FromPrimitive::from_usize(i).unwrap();
+            let object: BasicObject = FromPrimitive::from_usize(i).unwrap();
 
             meshes.push(object.create_mesh(facade)?);
         }
