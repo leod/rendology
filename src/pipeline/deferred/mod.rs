@@ -11,10 +11,11 @@ use nalgebra as na;
 
 use glium::{uniform, Surface};
 
-use crate::draw_instances::DrawInstances;
-use crate::object::{self, ObjectBuffers};
 use crate::shader::{self, ToUniforms, ToVertex};
-use crate::{screen_quad, Camera, Context, DrawError, Instancing, Object, ScreenQuad};
+use crate::{
+    basic_object, screen_quad, BasicObject, Camera, Context, DrawError, Drawable, Instancing, Mesh,
+    ScreenQuad,
+};
 
 use crate::pipeline::{CompositionPassComponent, Light, RenderPassComponent, ScenePassComponent};
 
@@ -37,7 +38,7 @@ pub struct DeferredShading {
     light_object_program: glium::Program,
 
     screen_quad: ScreenQuad,
-    sphere: ObjectBuffers<object::Vertex>,
+    sphere: Mesh<basic_object::Vertex>,
 
     light_instances: Vec<<Light as ToVertex>::Vertex>,
     light_instancing: Instancing<<Light as ToVertex>::Vertex>,
@@ -118,7 +119,7 @@ impl DeferredShading {
         let screen_quad = ScreenQuad::create(facade)?;
 
         info!("Creating sphere");
-        let sphere = Object::Sphere.create_buffers(facade)?;
+        let sphere = BasicObject::Sphere.create_mesh(facade)?;
 
         info!("Creating light buffers");
         let light_instancing = Instancing::create(facade)?;
@@ -260,8 +261,7 @@ impl DeferredShading {
             ..draw_params.clone()
         };
 
-        self.light_instancing.draw_instances(
-            &self.sphere,
+        self.light_instancing.as_drawable(&self.sphere).draw(
             &self.light_object_program,
             &uniforms.to_uniforms(),
             &draw_params,

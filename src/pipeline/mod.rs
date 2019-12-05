@@ -12,12 +12,10 @@ use log::info;
 
 use glium::{uniform, Surface};
 
-use crate::draw_instances::DrawInstances;
 use crate::fxaa::{self, FXAA};
-use crate::object::ObjectBuffers;
 use crate::scene::SceneCore;
 use crate::shader::ToUniforms;
-use crate::{shader, Context, DrawError, Light, ScreenQuad};
+use crate::{shader, Context, DrawError, Drawable, Light, ScreenQuad};
 
 use components::Components;
 
@@ -227,8 +225,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadowPassStep<'a, F, S> {
     pub fn draw<C: SceneCore>(
         self,
         pass: &Option<ShadowPass<C>>,
-        object: &ObjectBuffers<C::Vertex>,
-        draw_instances: &impl DrawInstances<C::Instance>,
+        drawable: &impl Drawable<C::Instance, C::Vertex>,
         params: &C::Params,
     ) -> Result<Self, DrawError> {
         if let (Some(pass), Some(shadow_mapping)) = (
@@ -237,8 +234,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadowPassStep<'a, F, S> {
         ) {
             shadow_mapping.shadow_pass(
                 self.0.facade,
-                object,
-                draw_instances,
+                drawable,
                 &pass.program,
                 (&self.0.context, params),
             )?;
@@ -256,8 +252,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
     pub fn draw<C: SceneCore>(
         self,
         pass: &ShadedScenePass<C>,
-        object: &ObjectBuffers<C::Vertex>,
-        draw_instances: &impl DrawInstances<C::Instance>,
+        drawable: &impl Drawable<C::Instance, C::Vertex>,
         params: &C::Params,
         draw_params: &glium::DrawParameters,
     ) -> Result<Self, DrawError> {
@@ -275,8 +270,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
         )?;
 
         pipeline.components.scene_pass::<C, _, _>(
-            object,
-            draw_instances,
+            drawable,
             &pass.program,
             (&self.0.context, params),
             draw_params,

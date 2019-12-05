@@ -1,10 +1,8 @@
 use log::info;
 
-use crate::draw_instances::DrawInstances;
-use crate::object::ObjectBuffers;
 use crate::scene::SceneCore;
 use crate::shader::{self, ToUniforms};
-use crate::{fxaa, screen_quad, Context, DrawError};
+use crate::{fxaa, screen_quad, Context, DrawError, Drawable, Mesh};
 
 use crate::pipeline::config::Config;
 use crate::pipeline::deferred::{self, DeferredShading};
@@ -173,8 +171,7 @@ impl Components {
 
     pub fn scene_pass<C, D, S>(
         &self,
-        object: &ObjectBuffers<C::Vertex>,
-        draw_instances: &D,
+        drawable: &D,
         program: &glium::Program,
         params: (&Context, &C::Params),
         draw_params: &glium::DrawParameters,
@@ -182,7 +179,7 @@ impl Components {
     ) -> Result<(), DrawError>
     where
         C: SceneCore,
-        D: DrawInstances<C::Instance>,
+        D: Drawable<C::Instance, C::Vertex>,
         S: glium::Surface,
     {
         let uniforms = (
@@ -192,13 +189,7 @@ impl Components {
                 .map(|c| c.scene_pass_uniforms(params.0)),
         );
 
-        draw_instances.draw_instances(
-            object,
-            program,
-            &uniforms.to_uniforms(),
-            &draw_params,
-            target,
-        )
+        drawable.draw(program, &uniforms.to_uniforms(), &draw_params, target)
     }
 
     pub fn on_target_resize<F: glium::backend::Facade>(
