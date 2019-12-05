@@ -196,16 +196,13 @@ impl Components {
         &mut self,
         facade: &F,
         target_size: (u32, u32),
-    ) -> Result<(), CreationError> {
+    ) -> Result<(), crate::CreationError> {
         if let Some(deferred_shading) = self.deferred_shading.as_mut() {
-            deferred_shading
-                .on_target_resize(facade, target_size)
-                .map_err(CreationError::DeferredShading)?;
+            deferred_shading.on_target_resize(facade, target_size)?;
         }
 
         if let Some(glow) = self.glow.as_mut() {
-            glow.on_target_resize(facade, target_size)
-                .map_err(CreationError::Glow)?;
+            glow.on_target_resize(facade, target_size)?;
         }
 
         Ok(())
