@@ -6,7 +6,7 @@ use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler, SamplerWrapFunction};
 use glium::{uniform, Surface};
 
-use crate::pipeline::{CompositionPassComponent, Context, RenderPass, ScenePassComponent};
+use crate::pipeline::{CompositionPassComponent, Context, RenderPassComponent, ScenePassComponent};
 use crate::shader::{self, ToUniforms};
 use crate::{screen_quad, DrawError, ScreenQuad};
 
@@ -31,7 +31,7 @@ pub struct Glow {
     screen_quad: ScreenQuad,
 }
 
-impl RenderPass for Glow {
+impl RenderPassComponent for Glow {
     fn clear_buffers<F: glium::backend::Facade>(&self, facade: &F) -> Result<(), DrawError> {
         let mut framebuffer =
             glium::framebuffer::SimpleFrameBuffer::new(facade, &self.glow_texture)?;
@@ -42,10 +42,10 @@ impl RenderPass for Glow {
 }
 
 impl ScenePassComponent for Glow {
-    fn core_transform<P, V>(
+    fn core_transform<P, I, V>(
         &self,
-        core: shader::Core<Context, P, V>,
-    ) -> shader::Core<Context, P, V> {
+        core: shader::Core<(Context, P), I, V>,
+    ) -> shader::Core<(Context, P), I, V> {
         shaders::glow_map_core_transform(core)
     }
 
