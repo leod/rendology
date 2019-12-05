@@ -5,27 +5,11 @@ pub enum IndexBuffer {
     NoIndices(glium::index::NoIndices),
 }
 
-impl IndexBuffer {
-    pub fn draw<'a, V, U, S>(
-        &self,
-        vertex_buffer: V,
-        program: &glium::Program,
-        uniforms: &U,
-        draw_parameters: &glium::DrawParameters,
-        target: &mut S,
-    ) -> Result<(), glium::DrawError>
-    where
-        V: glium::vertex::MultiVerticesSource<'a>,
-        U: glium::uniforms::Uniforms,
-        S: glium::Surface,
-    {
-        match &self {
-            IndexBuffer::IndexBuffer(buffer) => {
-                target.draw(vertex_buffer, buffer, program, uniforms, draw_parameters)
-            }
-            IndexBuffer::NoIndices(buffer) => {
-                target.draw(vertex_buffer, buffer, program, uniforms, draw_parameters)
-            }
+impl<'a> From<&'a IndexBuffer> for glium::index::IndicesSource<'a> {
+    fn from(buffer: &'a IndexBuffer) -> Self {
+        match buffer {
+            IndexBuffer::IndexBuffer(buffer) => buffer.into(),
+            IndexBuffer::NoIndices(buffer) => buffer.into(),
         }
     }
 }

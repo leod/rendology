@@ -149,11 +149,13 @@ where
                 .per_instance()
                 .map_err(|_| DrawError::InstancingNotSupported)?;
 
-            let vertices = (&self.1.vertex_buffer, per_instance);
-
-            self.1
-                .index_buffer
-                .draw(vertices, program, uniforms, draw_params, target)?;
+            target.draw(
+                (&self.1.vertex_buffer, per_instance),
+                &self.1.index_buffer,
+                program,
+                uniforms,
+                draw_params,
+            )?;
         }
 
         Ok(())
