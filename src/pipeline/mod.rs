@@ -19,8 +19,8 @@ use crate::shader::ToUniforms;
 use crate::{shader, Context, DrawError, Instancing, Light, ScreenQuad};
 
 use components::Components;
-use config::Config;
 
+pub use config::Config;
 pub use render_pass::{CompositionPassComponent, RenderPassComponent, ScenePassComponent};
 
 pub struct Pipeline {
@@ -40,9 +40,9 @@ pub struct Pipeline {
 }
 
 struct StepContext<'a, F, S> {
-    context: Context,
     pipeline: &'a mut Pipeline,
     facade: &'a F,
+    context: Context,
     target: &'a mut S,
 }
 
@@ -128,8 +128,8 @@ impl Pipeline {
 
     pub fn start_frame<'a, F: glium::backend::Facade, S: glium::Surface>(
         &'a mut self,
-        context: Context,
         facade: &'a F,
+        context: Context,
         target: &'a mut S,
     ) -> Result<StartFrameStep<'a, F, S>, DrawError> {
         profile!("start_frame");
@@ -154,9 +154,9 @@ impl Pipeline {
         self.components.clear_buffers(facade)?;
 
         Ok(StartFrameStep(StepContext {
-            context,
             pipeline: self,
             facade,
+            context,
             target,
         }))
     }

@@ -1,12 +1,89 @@
 use std::time::Instant;
 
+use rendology::scene::model;
+
 use floating_duration::TimeAsFloat;
 use glium::{glutin, Surface};
 use nalgebra as na;
 
 const WINDOW_SIZE: (u32, u32) = (1280, 720);
 
-fn run() -> Result<(), rendology::DrawError> {
+struct Pipeline {
+    rendology: rendology::Pipeline,
+
+    shadow_pass: Option<rendology::scene::ShadowPass<model::Core>>,
+    scene_pass: rendology::scene::ShadedScenePass<model::Core>,
+
+    cube: rendology::ObjectBuffers<rendology::object::Vertex>,
+    cube_instancing: rendology::Instancing<model::Instance>,
+}
+
+impl Pipeline {
+    fn create<F: glium::backend::Facade>(
+        facade: &F,
+        config: rendology::pipeline::Config,
+    ) -> Result<Self, rendology::pipeline::CreationError> {
+        let rendology = rendology::Pipeline::create(facade, &config, WINDOW_SIZE)?;
+
+        let shadow_pass = rendology.create_shadow_pass::<_, model::Core>(facade)?;
+        let scene_pass = rendology.create_shaded_scene_pass::<_, model::Core>(
+            facade,
+            rendology::scene::ShadedScenePassSetup {
+                draw_shadowed: true,
+                draw_glowing: false,
+            },
+        )?;
+
+        let cube = rendology::Object::Cube.create_buffers(facade)?;
+        let cube_instancing = rendology::Instancing::<model::Instance>::create(facade)?;
+
+        Ok(Pipeline {
+            rendology,
+            shadow_pass,
+            scene_pass,
+            cube,
+            cube_instancing,
+        })
+    }
+
+    fn draw_frame<F: glium::backend::Facade, S: glium::Surface>(
+        &mut self,
+        facade: &F,
+        context: &rendology::Context,
+        lights: &[rendology::Light],
+        cubes: &rendology::RenderList<model::Instance>,
+        target: &mut S,
+    ) -> Result<(), rendology::DrawError> {
+        self.cube_instancing.update(facade, cubes.as_slice())?;
+
+        let draw_params = glium::DrawParameters {
+            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
+            depth: glium::Depth {
+                test: glium::DepthTest::IfLessOrEqual,
+                write: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        self.rendology
+            .start_frame(facade, context.clone(), target)?
+            .shadow_pass()
+            .draw(&self.shadow_pass, &self.cube, &self.cube_instancing, &())?
+            .shaded_scene_pass()
+            .draw(
+                &self.scene_pass,
+                &self.cube,
+                &self.cube_instancing,
+                &(),
+                &draw_params,
+            )?
+            .compose(&lights)?
+            .present()
+    }
+}
+
+fn main() {
     simple_logger::init_with_level(log::Level::Info).unwrap();
 
     // Initialize glium
@@ -19,26 +96,8 @@ fn run() -> Result<(), rendology::DrawError> {
         glium::Display::new(window_builder, context_builder, &events_loop).unwrap()
     };
 
-    // Initialize rendology
-    let mut pipeline =
-        rendology::Pipeline::create(&display, &Default::default(), WINDOW_SIZE).unwrap();
-
-    let cube = rendology::Object::Cube.create_buffers(&display).unwrap();
-    let mut cube_instancing =
-        rendology::Instancing::<rendology::scene::model::Instance>::create(&display).unwrap();
-
-    let scene_pass = pipeline
-        .create_shaded_scene_pass::<_, rendology::scene::model::Core>(
-            &display,
-            rendology::scene::ShadedScenePassSetup {
-                draw_shadowed: true,
-                draw_glowing: false,
-            },
-        )
-        .unwrap();
-    let shadow_pass = pipeline
-        .create_shadow_pass::<_, rendology::scene::model::Core>(&display)
-        .unwrap();
+    // Initialize rendology pipeline
+    let mut pipeline = Pipeline::create(&display, Default::default()).unwrap();
 
     let start_time = Instant::now();
     let mut quit = false;
@@ -53,9 +112,7 @@ fn run() -> Result<(), rendology::DrawError> {
             }
         });
 
-        let time_elapsed = start_time.elapsed().as_fractional_secs() as f32;
-
-        let angle = time_elapsed;
+        let angle = start_time.elapsed().as_fractional_secs() as f32;
 
         let mut render_list = rendology::RenderList::default();
         render_list.add(rendology::scene::model::Instance {
@@ -67,10 +124,6 @@ fn run() -> Result<(), rendology::DrawError> {
             transform: na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(10.0, 10.0, 0.1)),
             color: na::Vector4::new(0.0, 1.0, 0.0, 1.0),
         });
-        cube_instancing
-            .update(&display, render_list.as_slice())
-            .unwrap();
-
         let lights = vec![rendology::Light {
             position: na::Point3::new(10.0, 10.0, 10.0),
             attenuation: na::Vector3::new(1.0, 0.0, 0.0),
@@ -80,6 +133,7 @@ fn run() -> Result<(), rendology::DrawError> {
         }];
 
         let mut target = display.draw();
+
         let camera = rendology::Camera {
             view: na::Matrix4::look_at_rh(
                 &na::Point3::new(9.0, -5.0, 7.0),
@@ -106,31 +160,10 @@ fn run() -> Result<(), rendology::DrawError> {
             main_light_center: na::Point3::new(0.0, 0.0, 0.0),
         };
 
-        let draw_params = glium::DrawParameters {
-            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
-            depth: glium::Depth {
-                test: glium::DepthTest::IfLessOrEqual,
-                write: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-
         pipeline
-            .start_frame(context, &display, &mut target)?
-            .shadow_pass()
-            .draw(&shadow_pass, &cube, &cube_instancing, &())?
-            .shaded_scene_pass()
-            .draw(&scene_pass, &cube, &cube_instancing, &(), &draw_params)?
-            .compose(&lights)?
-            .present()?;
+            .draw_frame(&display, &context, &lights, &render_list, &mut target)
+            .unwrap();
 
         target.finish().unwrap();
     }
-
-    Ok(())
-}
-
-fn main() {
-    run().unwrap();
 }
