@@ -75,6 +75,14 @@ impl BasicObj {
 
 pub struct RenderList<I: ToVertex>(Vec<crate::RenderList<I>>);
 
+impl<I: ToVertex> RenderList<I> {
+    pub fn clear(&mut self) {
+        for list in self.0.iter_mut() {
+            list.clear();
+        }
+    }
+}
+
 impl<I: ToVertex + Clone> Default for RenderList<I> {
     fn default() -> Self {
         Self(vec![Default::default(); NUM_TYPES])
@@ -100,6 +108,15 @@ impl<I: ToVertex> IndexMut<BasicObj> for RenderList<I> {
 pub struct Instancing<I: ToVertex>(Vec<crate::Instancing<I>>);
 
 impl<I: ToVertex> Instancing<I> {
+    pub fn create<F: glium::backend::Facade>(facade: &F) -> Result<Self, CreationError> {
+        let mut vec = Vec::new();
+        for _ in 0..NUM_TYPES {
+            vec.push(crate::Instancing::create(facade)?);
+        }
+
+        Ok(Instancing(vec))
+    }
+
     pub fn update<F: glium::backend::Facade>(
         &mut self,
         facade: &F,
