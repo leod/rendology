@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use rendology::{
-    basic_object, BasicObject, Instancing, Light, Mesh, RenderList, ShadedScenePass,
+    basic_obj, BasicObj, Instancing, Light, Mesh, RenderList, ShadedScenePass,
     ShadedScenePassSetup, ShadowPass,
 };
 
@@ -14,11 +14,11 @@ const WINDOW_SIZE: (u32, u32) = (1280, 720);
 struct Pipeline {
     rendology: rendology::Pipeline,
 
-    shadow_pass: Option<ShadowPass<basic_object::Core>>,
-    scene_pass: ShadedScenePass<basic_object::Core>,
+    shadow_pass: Option<ShadowPass<basic_obj::Core>>,
+    scene_pass: ShadedScenePass<basic_obj::Core>,
 
-    cube: Mesh<basic_object::Vertex>,
-    cube_instancing: Instancing<basic_object::Instance>,
+    cube: Mesh<basic_obj::Vertex>,
+    cube_instancing: Instancing<basic_obj::Instance>,
 }
 
 impl Pipeline {
@@ -28,17 +28,17 @@ impl Pipeline {
     ) -> Result<Self, rendology::pipeline::CreationError> {
         let rendology = rendology::Pipeline::create(facade, config, WINDOW_SIZE)?;
 
-        let shadow_pass = rendology.create_shadow_pass(facade, basic_object::Core)?;
+        let shadow_pass = rendology.create_shadow_pass(facade, basic_obj::Core)?;
         let scene_pass = rendology.create_shaded_scene_pass(
             facade,
-            basic_object::Core,
+            basic_obj::Core,
             ShadedScenePassSetup {
                 draw_shadowed: true,
                 draw_glowing: false,
             },
         )?;
 
-        let cube = BasicObject::Cube.create_mesh(facade)?;
+        let cube = BasicObj::Cube.create_mesh(facade)?;
         let cube_instancing = Instancing::create(facade)?;
 
         Ok(Pipeline {
@@ -55,7 +55,7 @@ impl Pipeline {
         facade: &F,
         context: &rendology::Context,
         lights: &[Light],
-        cubes: &RenderList<basic_object::Instance>,
+        cubes: &RenderList<basic_obj::Instance>,
         target: &mut S,
     ) -> Result<(), rendology::DrawError> {
         self.cube_instancing.update(facade, cubes.as_slice())?;
@@ -117,12 +117,12 @@ fn main() {
         let angle = start_time.elapsed().as_fractional_secs() as f32;
 
         let mut render_list = RenderList::default();
-        render_list.add(basic_object::Instance {
+        render_list.add(basic_obj::Instance {
             transform: na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 3.0))
                 * na::Matrix4::from_euler_angles(angle, angle, angle),
             color: na::Vector4::new(0.9, 0.9, 0.9, 1.0),
         });
-        render_list.add(basic_object::Instance {
+        render_list.add(basic_obj::Instance {
             transform: na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(10.0, 10.0, 0.1)),
             color: na::Vector4::new(0.0, 1.0, 0.0, 1.0),
         });

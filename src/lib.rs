@@ -1,6 +1,6 @@
 #[macro_use]
 pub mod shader;
-pub mod basic_object;
+pub mod basic_obj;
 pub mod camera;
 pub mod drawable;
 pub mod error;
@@ -12,7 +12,7 @@ pub mod scene;
 pub mod screen_quad;
 pub mod stage;
 
-pub use basic_object::BasicObject;
+pub use basic_obj::BasicObj;
 pub use camera::Camera;
 pub use drawable::Drawable;
 pub use error::{CreationError, DrawError};

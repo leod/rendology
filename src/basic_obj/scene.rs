@@ -1,7 +1,7 @@
 use nalgebra as na;
 
 use crate::scene::SceneCore;
-use crate::{basic_object, shader, Context};
+use crate::{basic_obj, shader, Context};
 
 #[derive(Clone, Debug)]
 pub struct Instance {
@@ -31,9 +31,9 @@ pub struct Core;
 impl SceneCore for Core {
     type Params = ();
     type Instance = Instance;
-    type Vertex = basic_object::Vertex;
+    type Vertex = basic_obj::Vertex;
 
-    fn scene_core(&self) -> shader::Core<(Context, ()), Instance, basic_object::Vertex> {
+    fn scene_core(&self) -> shader::Core<(Context, ()), Instance, basic_obj::Vertex> {
         let vertex = shader::VertexCore::empty()
             .with_out(
                 // TODO: Precompute inverse of mat_model if we ever have lots of vertices
