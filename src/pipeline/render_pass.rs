@@ -1,8 +1,10 @@
 use crate::pipeline::Context;
 use crate::scene::SceneCore;
+use crate::shader::InstancingMode;
 use crate::{screen_quad, shader, DrawError};
 
 pub struct ShadowPass<C: SceneCore> {
+    pub instancing_mode: InstancingMode,
     pub program: glium::Program,
 
     /// The transformed shader core that was used for building the `program`.
@@ -18,6 +20,7 @@ pub struct ShadedScenePassSetup {
 }
 
 pub struct ShadedScenePass<C: SceneCore> {
+    pub instancing_mode: InstancingMode,
     pub setup: ShadedScenePassSetup,
 
     pub program: glium::Program,
@@ -29,6 +32,7 @@ pub struct ShadedScenePass<C: SceneCore> {
 }
 
 pub struct PlainScenePass<C: SceneCore> {
+    pub instancing_mode: InstancingMode,
     pub program: glium::Program,
 
     /// The transformed shader core that was used for building the `program`.

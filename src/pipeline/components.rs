@@ -1,6 +1,7 @@
 use log::info;
 
 use crate::scene::SceneCore;
+use crate::shader::InstancingMode;
 use crate::{fxaa, screen_quad, shader, Context, DrawError, Drawable};
 
 use crate::pipeline::config::Config;
@@ -59,6 +60,7 @@ impl Components {
         &self,
         facade: &F,
         scene_core: C,
+        instancing_mode: InstancingMode,
     ) -> Result<Option<ShadowPass<C>>, crate::CreationError>
     where
         F: glium::backend::Facade,
@@ -74,9 +76,10 @@ impl Components {
 
                 let shader_core =
                     shadow_mapping.shadow_pass_core_transform(scene_core.scene_core());
-                let program = shader_core.build_program(facade, shader::InstancingMode::Vertex)?;
+                let program = shader_core.build_program(facade, instancing_mode)?;
 
                 Ok(ShadowPass {
+                    instancing_mode,
                     program,
                     shader_core,
                 })
@@ -88,6 +91,7 @@ impl Components {
         &self,
         facade: &F,
         scene_core: C,
+        instancing_mode: InstancingMode,
         setup: ShadedScenePassSetup,
     ) -> Result<ShadedScenePass<C>, crate::CreationError>
     where
@@ -119,9 +123,10 @@ impl Components {
             shader_core = shaders::diffuse_scene_core_transform(shader_core);
         }
 
-        let program = shader_core.build_program(facade, shader::InstancingMode::Vertex)?;
+        let program = shader_core.build_program(facade, instancing_mode)?;
 
         Ok(ShadedScenePass {
+            instancing_mode,
             setup,
             program,
             shader_core,

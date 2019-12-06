@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use rendology::{
-    basic_obj, BasicObj, Instancing, Light, Mesh, RenderList, ShadedScenePass,
+    basic_obj, BasicObj, Instancing, InstancingMode, Light, Mesh, RenderList, ShadedScenePass,
     ShadedScenePassSetup, ShadowPass,
 };
 
@@ -28,10 +28,12 @@ impl Pipeline {
     ) -> Result<Self, rendology::pipeline::CreationError> {
         let rendology = rendology::Pipeline::create(facade, config, WINDOW_SIZE)?;
 
-        let shadow_pass = rendology.create_shadow_pass(facade, basic_obj::Core)?;
+        let shadow_pass =
+            rendology.create_shadow_pass(facade, basic_obj::Core, InstancingMode::Vertex)?;
         let scene_pass = rendology.create_shaded_scene_pass(
             facade,
             basic_obj::Core,
+            InstancingMode::Vertex,
             ShadedScenePassSetup {
                 draw_shadowed: true,
                 draw_glowing: false,
