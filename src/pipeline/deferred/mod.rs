@@ -263,7 +263,7 @@ impl DeferredShading {
 
         self.light_instancing.as_drawable(&self.sphere).draw(
             &self.light_object_program,
-            &uniforms.to_uniforms(),
+            &uniforms,
             &draw_params,
             &mut light_buffer,
         )?;

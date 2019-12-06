@@ -1,3 +1,4 @@
+use crate::shader::ToUniforms;
 use crate::DrawError;
 
 pub trait Drawable<I, V>
@@ -12,6 +13,6 @@ where
         target: &mut S,
     ) -> Result<(), DrawError>
     where
-        U: glium::uniforms::Uniforms,
+        U: ToUniforms,
         S: glium::Surface;
 }

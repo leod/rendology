@@ -137,7 +137,7 @@ impl ShadowMapping {
 
         drawable.draw(
             program,
-            &(light_context, params.1).to_uniforms(),
+            &(light_context, params.1),
             &draw_params,
             &mut shadow_target,
         )

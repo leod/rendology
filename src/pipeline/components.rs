@@ -1,8 +1,7 @@
 use log::info;
 
 use crate::scene::SceneCore;
-use crate::shader::{self, ToUniforms};
-use crate::{fxaa, screen_quad, Context, DrawError, Drawable};
+use crate::{fxaa, screen_quad, shader, Context, DrawError, Drawable};
 
 use crate::pipeline::config::Config;
 use crate::pipeline::deferred::{self, DeferredShading};
@@ -189,7 +188,7 @@ impl Components {
                 .map(|c| c.scene_pass_uniforms(params.0)),
         );
 
-        drawable.draw(program, &uniforms.to_uniforms(), &draw_params, target)
+        drawable.draw(program, &uniforms, &draw_params, target)
     }
 
     pub fn on_target_resize<F: glium::backend::Facade>(

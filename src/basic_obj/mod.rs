@@ -6,7 +6,7 @@ use std::ops::{Index, IndexMut};
 use glium::{self, implement_vertex};
 use num_traits::{FromPrimitive, ToPrimitive};
 
-use crate::shader::InstanceInput;
+use crate::shader::{InstanceInput, ToUniforms};
 use crate::{CreationError, DrawError, Drawable, Mesh};
 
 pub use mesh::{load_wavefront, mesh_from_slices, CUBE_INDICES, CUBE_NORMALS, CUBE_POSITIONS};
@@ -145,7 +145,7 @@ impl<'a, I: InstanceInput> Drawable<I, Vertex> for DrawableImpl<'a, I> {
         target: &mut S,
     ) -> Result<(), DrawError>
     where
-        U: glium::uniforms::Uniforms,
+        U: ToUniforms,
         S: glium::Surface,
     {
         for i in 0..NUM_TYPES {
