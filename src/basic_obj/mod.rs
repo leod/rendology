@@ -6,7 +6,7 @@ use std::ops::{Index, IndexMut};
 use glium::{self, implement_vertex};
 use num_traits::{FromPrimitive, ToPrimitive};
 
-use crate::shader::ToVertex;
+use crate::shader::InstanceInput;
 use crate::{CreationError, DrawError, Drawable, Mesh};
 
 pub use mesh::{load_wavefront, mesh_from_slices, CUBE_INDICES, CUBE_NORMALS, CUBE_POSITIONS};
@@ -73,9 +73,9 @@ impl BasicObj {
     }
 }
 
-pub struct RenderList<I: ToVertex>(Vec<crate::RenderList<I>>);
+pub struct RenderList<I: InstanceInput>(Vec<crate::RenderList<I>>);
 
-impl<I: ToVertex> RenderList<I> {
+impl<I: InstanceInput> RenderList<I> {
     pub fn clear(&mut self) {
         for list in self.0.iter_mut() {
             list.clear();
@@ -83,13 +83,13 @@ impl<I: ToVertex> RenderList<I> {
     }
 }
 
-impl<I: ToVertex + Clone> Default for RenderList<I> {
+impl<I: InstanceInput + Clone> Default for RenderList<I> {
     fn default() -> Self {
         Self(vec![Default::default(); NUM_TYPES])
     }
 }
 
-impl<I: ToVertex> Index<BasicObj> for RenderList<I> {
+impl<I: InstanceInput> Index<BasicObj> for RenderList<I> {
     type Output = crate::RenderList<I>;
 
     fn index(&self, object: BasicObj) -> &crate::RenderList<I> {
@@ -98,16 +98,16 @@ impl<I: ToVertex> Index<BasicObj> for RenderList<I> {
     }
 }
 
-impl<I: ToVertex> IndexMut<BasicObj> for RenderList<I> {
+impl<I: InstanceInput> IndexMut<BasicObj> for RenderList<I> {
     fn index_mut(&mut self, object: BasicObj) -> &mut crate::RenderList<I> {
         // Safe to unwrap since `BasicObj::to_usize()` never fails.
         &mut self.0[object.to_usize().unwrap()]
     }
 }
 
-pub struct Instancing<I: ToVertex>(Vec<crate::Instancing<I>>);
+pub struct Instancing<I: InstanceInput>(Vec<crate::Instancing<I>>);
 
-impl<I: ToVertex> Instancing<I> {
+impl<I: InstanceInput> Instancing<I> {
     pub fn create<F: glium::backend::Facade>(facade: &F) -> Result<Self, CreationError> {
         let mut vec = Vec::new();
         for _ in 0..NUM_TYPES {
@@ -134,9 +134,9 @@ impl<I: ToVertex> Instancing<I> {
     }
 }
 
-struct DrawableImpl<'a, I: ToVertex>(&'a Instancing<I>, &'a Resources);
+struct DrawableImpl<'a, I: InstanceInput>(&'a Instancing<I>, &'a Resources);
 
-impl<'a, I: ToVertex> Drawable<I, Vertex> for DrawableImpl<'a, I> {
+impl<'a, I: InstanceInput> Drawable<I, Vertex> for DrawableImpl<'a, I> {
     fn draw<U, S>(
         &self,
         program: &glium::Program,

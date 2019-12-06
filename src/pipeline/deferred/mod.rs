@@ -11,7 +11,7 @@ use nalgebra as na;
 
 use glium::{uniform, Surface};
 
-use crate::shader::{self, ToUniforms, ToVertex};
+use crate::shader::{self, InstanceInput, ToUniforms};
 use crate::{
     basic_obj, screen_quad, BasicObj, Camera, Context, DrawError, Drawable, Instancing, Mesh,
     ScreenQuad,
@@ -40,8 +40,8 @@ pub struct DeferredShading {
     screen_quad: ScreenQuad,
     sphere: Mesh<basic_obj::Vertex>,
 
-    light_instances: Vec<<Light as ToVertex>::Vertex>,
-    light_instancing: Instancing<<Light as ToVertex>::Vertex>,
+    light_instances: Vec<<Light as InstanceInput>::Vertex>,
+    light_instancing: Instancing<Light>,
 }
 
 impl RenderPassComponent for DeferredShading {

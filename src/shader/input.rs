@@ -23,22 +23,14 @@ pub trait ToUniforms {
     }
 }
 
-pub trait ToVertex {
-    type Vertex: glium::vertex::Vertex;
-
-    fn to_vertex(&self) -> Self::Vertex;
-}
-
 pub trait UniformInput: ToUniforms {
     fn uniform_input_defs() -> Vec<(String, UniformType)>;
 }
 
-impl<V: glium::vertex::Vertex> ToVertex for V {
-    type Vertex = Self;
+pub trait InstanceInput: UniformInput {
+    type Vertex: glium::vertex::Vertex + ToUniforms;
 
-    fn to_vertex(&self) -> Self {
-        *self
-    }
+    fn to_vertex(&self) -> Self::Vertex;
 }
 
 // The following type aliases have the same name as variants in glium's
@@ -148,10 +140,48 @@ macro_rules! impl_to_vertex {
 }
 
 #[macro_export]
-macro_rules! impl_uniform_input_and_to_vertex {
-    ($ty:ident, $this:ident => { $( $field:ident: $type:ident => $value:expr, )* } $(,)? ) => {
-        $crate::impl_uniform_input!($ty, $this => { $($field: $type => $value, )* });
-        $crate::impl_to_vertex!($ty, $this => { $($field: $type => $value, )* });
+macro_rules! impl_instance_input {
+    ($ty:ident, $this:ident => { $( $field:ident: $variant:ident => $value:expr, )* } $(,)? ) => {
+        $crate::impl_uniform_input!($ty, $this => { $($field: $variant => $value, )* });
+
+        #[derive(Copy, Clone, Debug)]
+        pub struct MyVertex {
+            $(
+                $field: $crate::shader::input::$variant,
+            )*
+        }
+
+        use glium::implement_vertex;
+        implement_vertex!(MyVertex, $($field,)*);
+
+        impl $crate::shader::ToUniforms for MyVertex {
+            fn visit_values<'a, F>(&'a self, mut output: F)
+            where
+                F: FnMut(&str, glium::uniforms::UniformValue<'a>),
+            {
+                $(
+                    output(stringify!($field), glium::uniforms::UniformValue::$variant(self.$field));
+                )*
+            }
+        }
+
+        impl $crate::shader::UniformInput for MyVertex {
+            fn uniform_input_defs() -> Vec<(String, glium::uniforms::UniformType)> {
+                $ty::uniform_input_defs()
+            }
+        }
+
+        impl $crate::shader::InstanceInput for $ty {
+            type Vertex = MyVertex;
+
+            fn to_vertex(&$this) -> Self::Vertex {
+                Self::Vertex {
+                    $(
+                        $field: $value,
+                    )*
+                }
+            }
+        }
     }
 }
 

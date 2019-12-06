@@ -18,7 +18,7 @@ impl Default for Instance {
     }
 }
 
-impl_uniform_input_and_to_vertex!(
+impl_instance_input!(
     Instance,
     self => {
         mat_model: Mat4 => self.transform.into(),
