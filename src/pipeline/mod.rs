@@ -58,6 +58,9 @@ pub struct ShadowPassStep<'a, F, S>(StepContext<'a, F, S>);
 pub struct ShadedScenePassStep<'a, F, S>(StepContext<'a, F, S>);
 
 #[must_use]
+pub struct AfterComposeStep<'a, F, S>(StepContext<'a, F, S>);
+
+#[must_use]
 pub struct PlainScenePassStep<'a, F, S>(StepContext<'a, F, S>);
 
 impl Pipeline {
@@ -307,7 +310,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
         Ok(self)
     }
 
-    pub fn compose(mut self, lights: &[Light]) -> Result<PlainScenePassStep<'a, F, S>, DrawError> {
+    pub fn compose(mut self, lights: &[Light]) -> Result<AfterComposeStep<'a, F, S>, DrawError> {
         let pipeline = &mut self.0.pipeline;
         let components = &mut pipeline.components;
 
@@ -357,7 +360,43 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
             )?;
         }
 
-        Ok(PlainScenePassStep(self.0))
+        Ok(AfterComposeStep(self.0))
+    }
+}
+
+impl<'a, F, S: Surface> StepContext<'a, F, S> {
+    fn present(self) -> Result<(), DrawError> {
+        // Postprocessing
+        if let Some(fxaa) = self.pipeline.fxaa.as_ref() {
+            profile!("fxaa");
+
+            fxaa.draw(&self.pipeline.composition_texture, self.target)?;
+        } else {
+            profile!("copy_to_target");
+
+            // TODO: Use blitting instead
+            self.target.draw(
+                &self.pipeline.screen_quad.vertex_buffer,
+                &self.pipeline.screen_quad.index_buffer,
+                &self.pipeline.copy_texture_program,
+                &uniform! {
+                    color_texture: &self.pipeline.composition_texture,
+                },
+                &Default::default(),
+            )?;
+        }
+
+        Ok(())
+    }
+}
+
+impl<'a, F: glium::backend::Facade, S: Surface> AfterComposeStep<'a, F, S> {
+    pub fn plain_scene_pass(self) -> PlainScenePassStep<'a, F, S> {
+        PlainScenePassStep(self.0)
+    }
+
+    pub fn present(self) -> Result<(), DrawError> {
+        self.0.present()
     }
 }
 
@@ -386,30 +425,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> PlainScenePassStep<'a, F, S> {
     }
 
     pub fn present(self) -> Result<(), DrawError> {
-        let pipeline = self.0.pipeline;
-        let target = self.0.target;
-
-        // Postprocessing
-        if let Some(fxaa) = pipeline.fxaa.as_ref() {
-            profile!("fxaa");
-
-            fxaa.draw(&pipeline.composition_texture, target)?;
-        } else {
-            profile!("copy_to_target");
-
-            // TODO: Use blitting instead
-            target.draw(
-                &pipeline.screen_quad.vertex_buffer,
-                &pipeline.screen_quad.index_buffer,
-                &pipeline.copy_texture_program,
-                &uniform! {
-                    color_texture: &pipeline.composition_texture,
-                },
-                &Default::default(),
-            )?;
-        }
-
-        Ok(())
+        self.0.present()
     }
 }
 
