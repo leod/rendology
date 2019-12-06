@@ -3,9 +3,9 @@ pub mod deferred;
 pub mod glow;
 pub mod shaders;
 pub mod shadow;
+pub mod render_pass;
 
 mod components;
-mod render_pass;
 
 use coarse_prof::profile;
 use log::info;
