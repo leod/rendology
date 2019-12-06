@@ -1,9 +1,9 @@
 pub mod config;
 pub mod deferred;
 pub mod glow;
+pub mod render_pass;
 pub mod shaders;
 pub mod shadow;
-pub mod render_pass;
 
 mod components;
 

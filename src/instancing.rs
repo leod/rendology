@@ -1,6 +1,6 @@
 use log::info;
 
-use crate::shader::{InstanceInput, ToUniforms};
+use crate::shader::{InstanceInput, InstancingMode, ToUniforms};
 use crate::{Drawable, Mesh};
 
 pub use crate::error::{CreationError, DrawError};
@@ -124,6 +124,8 @@ where
     I: InstanceInput,
     V: glium::vertex::Vertex,
 {
+    const INSTANCING_MODE: InstancingMode = InstancingMode::Vertex;
+
     fn draw<U, S>(
         &self,
         program: &glium::Program,
