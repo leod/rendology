@@ -44,7 +44,6 @@ impl_uniform_input!(
         mat_projection: Mat4 => self.camera.projection.into(),
         mat_view: Mat4 => self.camera.view.into(),
         main_light_pos: Vec3 => self.main_light_pos.coords.into(),
-        tick_progress: Float => 0.0, // TODO
     },
 );
 
