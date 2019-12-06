@@ -1,14 +1,14 @@
 use nalgebra as na;
 
-use crate::shader::ToVertex;
+use crate::shader::InstanceInput;
 use crate::Camera;
 
 #[derive(Clone)]
-pub struct RenderList<T: ToVertex> {
+pub struct RenderList<T: InstanceInput> {
     instances: Vec<T::Vertex>,
 }
 
-impl<T: ToVertex> Default for RenderList<T> {
+impl<T: InstanceInput> Default for RenderList<T> {
     fn default() -> Self {
         RenderList {
             instances: Vec::new(),
@@ -16,7 +16,7 @@ impl<T: ToVertex> Default for RenderList<T> {
     }
 }
 
-impl<T: ToVertex> RenderList<T> {
+impl<T: InstanceInput> RenderList<T> {
     pub fn clear(&mut self) {
         self.instances.clear();
     }
@@ -56,7 +56,7 @@ pub struct Light {
     pub radius: f32,
 }
 
-impl_uniform_input_and_to_vertex!(
+impl_instance_input!(
     Light,
     self => {
         light_position: Vec3 => self.position.coords.into(),

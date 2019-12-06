@@ -1,6 +1,6 @@
 use log::info;
 
-use crate::shader::ToVertex;
+use crate::shader::InstanceInput;
 use crate::{Drawable, Mesh};
 
 pub use crate::error::{CreationError, DrawError};
@@ -56,11 +56,11 @@ where
     }
 }
 
-pub struct Instancing<V: ToVertex> {
+pub struct Instancing<V: InstanceInput> {
     buffers: Vec<Buffer<V::Vertex>>,
 }
 
-impl<I: ToVertex> Instancing<I> {
+impl<I: InstanceInput> Instancing<I> {
     pub fn create<F: glium::backend::Facade>(facade: &F) -> Result<Self, CreationError> {
         let buffers = vec![Buffer::create(facade)?];
 
@@ -117,11 +117,11 @@ impl<I: ToVertex> Instancing<I> {
     }
 }
 
-struct DrawableImpl<'a, I: ToVertex, V: Copy>(&'a Instancing<I>, &'a Mesh<V>);
+struct DrawableImpl<'a, I: InstanceInput, V: Copy>(&'a Instancing<I>, &'a Mesh<V>);
 
 impl<'a, I, V> Drawable<I, V> for DrawableImpl<'a, I, V>
 where
-    I: ToVertex,
+    I: InstanceInput,
     V: glium::vertex::Vertex,
 {
     fn draw<U, S>(

@@ -12,7 +12,7 @@ use glsl::visitor::Host;
 use glium::uniforms::UniformType;
 use glium::vertex::AttributeType;
 
-pub use input::{ToUniforms, ToVertex, UniformInput};
+pub use input::{InstanceInput, ToUniforms, UniformInput};
 
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -287,9 +287,9 @@ fn does_core_use_variable(
 
 impl<P, I, V> Core<P, I, V>
 where
-    P: UniformInput + Clone,
-    I: UniformInput + Clone,
-    V: glium::vertex::Vertex,
+    P: Clone,
+    I: Clone,
+    V: Clone,
 {
     pub fn link(&self) -> LinkedCore<P, I, V> {
         let mut fragment = self.fragment.clone();
