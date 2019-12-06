@@ -42,6 +42,7 @@ pub struct Pipeline {
 }
 
 struct StepContext<'a, F, S> {
+    _prof_guard: coarse_prof::Guard,
     pipeline: &'a mut Pipeline,
     facade: &'a F,
     context: Context,
@@ -158,6 +159,7 @@ impl Pipeline {
         context: Context,
         target: &'a mut S,
     ) -> Result<StartFrameStep<'a, F, S>, DrawError> {
+        let prof_guard = coarse_prof::enter("pipeline");
         profile!("start_frame");
 
         if target.get_dimensions() != self.target_size {
@@ -180,6 +182,7 @@ impl Pipeline {
         self.components.clear_buffers(facade)?;
 
         Ok(StartFrameStep(StepContext {
+            _prof_guard: prof_guard,
             pipeline: self,
             facade,
             context,
