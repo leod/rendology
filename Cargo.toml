@@ -3,6 +3,12 @@ name = "rendology"
 version = "0.1.0"
 authors = ["leod <subtle.frustration@proton.me>"]
 edition = "2018"
+description = "Rendology is a Glium-based 3D rendering library"
+homepage = "https://github.com/leod/rendology"
+documentation = "https://docs.rs/rendology"
+repository = "https://github.com/leod/rendology"
+keywords = ["graphics", "rendering", "pipeline", "glium", "3d"]
+readme = "README.md"
 
 [dependencies]
 nalgebra = "0.18"
