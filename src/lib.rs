@@ -21,6 +21,6 @@ pub use mesh::Mesh;
 pub use pipeline::{
     Config, Pipeline, PlainScenePass, ShadedScenePass, ShadedScenePassSetup, ShadowPass,
 };
+pub use scene::SceneCore;
 pub use screen_quad::ScreenQuad;
 pub use stage::{Context, Light, RenderList};
-pub use scene::SceneCore;

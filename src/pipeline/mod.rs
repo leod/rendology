@@ -131,6 +131,24 @@ impl Pipeline {
             .create_shaded_scene_pass(facade, scene_core, setup)
     }
 
+    pub fn create_plain_scene_pass<F, C>(
+        &self,
+        facade: &F,
+        scene_core: C,
+    ) -> Result<PlainScenePass<C>, crate::CreationError>
+    where
+        F: glium::backend::Facade,
+        C: SceneCore,
+    {
+        let shader_core = scene_core.scene_core();
+        let program = shader_core.build_program(facade, shader::InstancingMode::Vertex)?;
+
+        Ok(PlainScenePass {
+            program,
+            shader_core,
+        })
+    }
+
     pub fn start_frame<'a, F: glium::backend::Facade, S: glium::Surface>(
         &'a mut self,
         facade: &'a F,
@@ -344,6 +362,29 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
 }
 
 impl<'a, F: glium::backend::Facade, S: Surface> PlainScenePassStep<'a, F, S> {
+    pub fn draw<C: SceneCore>(
+        self,
+        pass: &PlainScenePass<C>,
+        drawable: &impl Drawable<C::Instance, C::Vertex>,
+        params: &C::Params,
+        draw_params: &glium::DrawParameters,
+    ) -> Result<Self, DrawError> {
+        let mut framebuffer = glium::framebuffer::SimpleFrameBuffer::with_depth_buffer(
+            self.0.facade,
+            &self.0.pipeline.composition_texture,
+            &self.0.pipeline.scene_depth_texture,
+        )?;
+
+        drawable.draw(
+            &pass.program,
+            &(&self.0.context, params).to_uniforms(),
+            &draw_params,
+            &mut framebuffer,
+        )?;
+
+        Ok(self)
+    }
+
     pub fn present(self) -> Result<(), DrawError> {
         let pipeline = self.0.pipeline;
         let target = self.0.target;
