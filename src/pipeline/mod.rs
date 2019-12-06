@@ -1,4 +1,4 @@
-pub mod config;
+mod config;
 pub mod deferred;
 pub mod glow;
 pub mod render_pass;
