@@ -1,6 +1,6 @@
 use log::info;
 
-use crate::shader::InstanceInput;
+use crate::shader::{InstanceInput, ToUniforms};
 use crate::{Drawable, Mesh};
 
 pub use crate::error::{CreationError, DrawError};
@@ -132,9 +132,11 @@ where
         target: &mut S,
     ) -> Result<(), DrawError>
     where
-        U: glium::uniforms::Uniforms,
+        U: ToUniforms,
         S: glium::Surface,
     {
+        let uniforms = uniforms.to_uniforms();
+
         for buffer in self.0.buffers.iter() {
             if buffer.num_used == 0 {
                 // Buffers are filled sequentially, so we can exit early here.
@@ -153,7 +155,7 @@ where
                 (&self.1.vertex_buffer, per_instance),
                 &self.1.index_buffer,
                 program,
-                uniforms,
+                &uniforms,
                 draw_params,
             )?;
         }

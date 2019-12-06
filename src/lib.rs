@@ -8,6 +8,7 @@ pub mod fxaa;
 pub mod instancing;
 pub mod mesh;
 pub mod pipeline;
+pub mod render_list;
 pub mod scene;
 pub mod screen_quad;
 pub mod stage;
@@ -21,6 +22,7 @@ pub use mesh::Mesh;
 pub use pipeline::{
     Config, Pipeline, PlainScenePass, ShadedScenePass, ShadedScenePassSetup, ShadowPass,
 };
+pub use render_list::RenderList;
 pub use scene::SceneCore;
 pub use screen_quad::ScreenQuad;
-pub use stage::{Context, Light, RenderList};
+pub use stage::{Context, Light};

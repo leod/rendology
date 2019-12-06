@@ -1,34 +1,6 @@
 use nalgebra as na;
 
-use crate::shader::InstanceInput;
 use crate::Camera;
-
-#[derive(Clone)]
-pub struct RenderList<T: InstanceInput> {
-    instances: Vec<T::Vertex>,
-}
-
-impl<T: InstanceInput> Default for RenderList<T> {
-    fn default() -> Self {
-        RenderList {
-            instances: Vec::new(),
-        }
-    }
-}
-
-impl<T: InstanceInput> RenderList<T> {
-    pub fn clear(&mut self) {
-        self.instances.clear();
-    }
-
-    pub fn as_slice(&self) -> &[T::Vertex] {
-        &self.instances
-    }
-
-    pub fn add(&mut self, params: T) {
-        self.instances.push(params.to_vertex());
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Context {

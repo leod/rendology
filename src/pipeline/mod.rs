@@ -419,7 +419,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> PlainScenePassStep<'a, F, S> {
 
         drawable.draw(
             &pass.program,
-            &(&self.0.context, params).to_uniforms(),
+            &(&self.0.context, params),
             &draw_params,
             &mut framebuffer,
         )?;
