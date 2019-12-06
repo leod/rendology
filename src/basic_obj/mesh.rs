@@ -2,7 +2,7 @@ use std::path::Path;
 
 use log::info;
 
-use crate::basic_object::{BasicObject, Vertex};
+use crate::basic_obj::{BasicObj, Vertex};
 use crate::mesh::{IndexBuffer, Mesh};
 use crate::CreationError;
 
@@ -79,11 +79,11 @@ pub fn load_wavefront<F: glium::backend::Facade>(
 
 #[rustfmt::skip]
 pub fn create_mesh<F: glium::backend::Facade>(
-    object: BasicObject,
+    object: BasicObj,
     facade: &F,
 ) -> Result<Mesh<Vertex>, CreationError> {
     match object {
-        BasicObject::Triangle => {
+        BasicObj::Triangle => {
             let positions = vec![
                 [0.0, -0.5, 0.0],
                 [0.0,  0.5, 0.0],
@@ -106,7 +106,7 @@ pub fn create_mesh<F: glium::backend::Facade>(
                 &indices,
             )
         }
-        BasicObject::Quad => {
+        BasicObj::Quad => {
             let positions = vec![
                 [0.0, 0.0, 0.0],
                 [1.0, 0.0, 0.0],
@@ -134,7 +134,7 @@ pub fn create_mesh<F: glium::backend::Facade>(
                 &indices,
             )
         }
-        BasicObject::Cube => {
+        BasicObj::Cube => {
             mesh_from_slices(
                 facade,
                 glium::index::PrimitiveType::TrianglesList,
@@ -143,7 +143,7 @@ pub fn create_mesh<F: glium::backend::Facade>(
                 CUBE_INDICES,
             )
         }
-        BasicObject::Sphere => {
+        BasicObj::Sphere => {
             // For reference: http://www.songho.ca/opengl/gl_sphere.html
 
             let mut positions = Vec::new();
@@ -204,7 +204,7 @@ pub fn create_mesh<F: glium::backend::Facade>(
                 &indices,
             )
         }
-        BasicObject::LineX => {
+        BasicObj::LineX => {
             mesh_from_slices(
                 facade,
                 glium::index::PrimitiveType::LinesList,
@@ -213,7 +213,7 @@ pub fn create_mesh<F: glium::backend::Facade>(
                 &[0, 1],
             )
         }
-        BasicObject::LineY => {
+        BasicObj::LineY => {
             mesh_from_slices(
                 facade,
                 glium::index::PrimitiveType::LinesList,
@@ -222,7 +222,7 @@ pub fn create_mesh<F: glium::backend::Facade>(
                 &[0, 1],
             )
         }
-        BasicObject::LineZ => {
+        BasicObj::LineZ => {
             mesh_from_slices(
                 facade,
                 glium::index::PrimitiveType::LinesList,
@@ -231,7 +231,7 @@ pub fn create_mesh<F: glium::backend::Facade>(
                 &[0, 1],
             )
         }
-        BasicObject::TessellatedCube => {
+        BasicObj::TessellatedCube => {
             let mut positions = Vec::new();
             let mut normals = Vec::new();
             let mut indices = Vec::new();
@@ -261,7 +261,7 @@ pub fn create_mesh<F: glium::backend::Facade>(
                 &indices,
             )
         }
-        BasicObject::TessellatedCylinder => {
+        BasicObj::TessellatedCylinder => {
             let mut positions = Vec::new();
             let mut normals = Vec::new();
             let mut indices = Vec::new();

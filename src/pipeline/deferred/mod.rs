@@ -13,7 +13,7 @@ use glium::{uniform, Surface};
 
 use crate::shader::{self, ToUniforms, ToVertex};
 use crate::{
-    basic_object, screen_quad, BasicObject, Camera, Context, DrawError, Drawable, Instancing, Mesh,
+    basic_obj, screen_quad, BasicObj, Camera, Context, DrawError, Drawable, Instancing, Mesh,
     ScreenQuad,
 };
 
@@ -38,7 +38,7 @@ pub struct DeferredShading {
     light_object_program: glium::Program,
 
     screen_quad: ScreenQuad,
-    sphere: Mesh<basic_object::Vertex>,
+    sphere: Mesh<basic_obj::Vertex>,
 
     light_instances: Vec<<Light as ToVertex>::Vertex>,
     light_instancing: Instancing<<Light as ToVertex>::Vertex>,
@@ -119,7 +119,7 @@ impl DeferredShading {
         let screen_quad = ScreenQuad::create(facade)?;
 
         info!("Creating sphere");
-        let sphere = BasicObject::Sphere.create_mesh(facade)?;
+        let sphere = BasicObj::Sphere.create_mesh(facade)?;
 
         info!("Creating light buffers");
         let light_instancing = Instancing::create(facade)?;

@@ -13,7 +13,7 @@ pub use mesh::{load_wavefront, mesh_from_slices, CUBE_INDICES, CUBE_NORMALS, CUB
 pub use scene::{Core, Instance};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, num_derive::FromPrimitive, num_derive::ToPrimitive)]
-pub enum BasicObject {
+pub enum BasicObj {
     Triangle,
     Quad,
     Cube,
@@ -49,7 +49,7 @@ impl Resources {
 
         for i in 0..NUM_TYPES {
             // Safe to unwrap here, since we iterate within the range
-            let object: BasicObject = FromPrimitive::from_usize(i).unwrap();
+            let object: BasicObj = FromPrimitive::from_usize(i).unwrap();
 
             meshes.push(object.create_mesh(facade)?);
         }
@@ -57,13 +57,13 @@ impl Resources {
         Ok(Resources { meshes })
     }
 
-    pub fn mesh(&self, object: BasicObject) -> &Mesh<Vertex> {
-        // Safe to unwrap since `BasicObject::to_usize()` never fails.
+    pub fn mesh(&self, object: BasicObj) -> &Mesh<Vertex> {
+        // Safe to unwrap since `BasicObj::to_usize()` never fails.
         &self.meshes[object.to_usize().unwrap()]
     }
 }
 
-impl BasicObject {
+impl BasicObj {
     #[rustfmt::skip]
     pub fn create_mesh<F: glium::backend::Facade>(
         self,
@@ -81,18 +81,18 @@ impl<I: ToVertex + Clone> Default for RenderList<I> {
     }
 }
 
-impl<I: ToVertex> Index<BasicObject> for RenderList<I> {
+impl<I: ToVertex> Index<BasicObj> for RenderList<I> {
     type Output = crate::RenderList<I>;
 
-    fn index(&self, object: BasicObject) -> &crate::RenderList<I> {
-        // Safe to unwrap since `BasicObject::to_usize()` never fails.
+    fn index(&self, object: BasicObj) -> &crate::RenderList<I> {
+        // Safe to unwrap since `BasicObj::to_usize()` never fails.
         &self.0[object.to_usize().unwrap()]
     }
 }
 
-impl<I: ToVertex> IndexMut<BasicObject> for RenderList<I> {
-    fn index_mut(&mut self, object: BasicObject) -> &mut crate::RenderList<I> {
-        // Safe to unwrap since `BasicObject::to_usize()` never fails.
+impl<I: ToVertex> IndexMut<BasicObj> for RenderList<I> {
+    fn index_mut(&mut self, object: BasicObj) -> &mut crate::RenderList<I> {
+        // Safe to unwrap since `BasicObj::to_usize()` never fails.
         &mut self.0[object.to_usize().unwrap()]
     }
 }

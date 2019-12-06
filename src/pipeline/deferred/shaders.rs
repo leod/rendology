@@ -1,7 +1,7 @@
 use glium::uniforms::UniformType;
 
 use crate::pipeline::Light;
-use crate::{basic_object, screen_quad, shader, Camera};
+use crate::{basic_obj, screen_quad, shader, Camera};
 
 pub const F_WORLD_POS: &str = "f_world_pos";
 pub const F_WORLD_NORMAL: &str = "f_world_normal";
@@ -156,7 +156,7 @@ pub fn main_light_screen_quad_core(
     shader::Core { vertex, fragment }
 }
 
-pub fn light_object_core() -> shader::Core<Camera, Light, basic_object::Vertex> {
+pub fn light_object_core() -> shader::Core<Camera, Light, basic_obj::Vertex> {
     let vertex = shader::VertexCore::default()
         .with_out(v_light_pos(), "light_position")
         .with_out(v_light_color(), "light_color")
