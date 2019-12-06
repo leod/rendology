@@ -1,17 +1,19 @@
 #[macro_use]
 pub mod shader;
+
+mod camera;
+mod drawable;
+mod error;
+mod instancing;
+mod mesh;
+mod render_list;
+mod scene;
+mod stage;
+
 pub mod basic_obj;
-pub mod camera;
-pub mod drawable;
-pub mod error;
 pub mod fxaa;
-pub mod instancing;
-pub mod mesh;
 pub mod pipeline;
-pub mod render_list;
-pub mod scene;
 pub mod screen_quad;
-pub mod stage;
 
 pub use basic_obj::BasicObj;
 pub use camera::Camera;
