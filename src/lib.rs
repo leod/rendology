@@ -25,4 +25,5 @@ pub use pipeline::{
 pub use render_list::RenderList;
 pub use scene::SceneCore;
 pub use screen_quad::ScreenQuad;
+pub use shader::InstancingMode;
 pub use stage::{Context, Light};

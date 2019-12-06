@@ -14,7 +14,7 @@ use glium::{uniform, Surface};
 
 use crate::fxaa::{self, FXAA};
 use crate::scene::SceneCore;
-use crate::shader::ToUniforms;
+use crate::shader::{InstancingMode, ToUniforms};
 use crate::{shader, Context, DrawError, Drawable, Light, ScreenQuad};
 
 use components::Components;
@@ -113,18 +113,21 @@ impl Pipeline {
         &self,
         facade: &F,
         scene_core: C,
+        instancing_mode: InstancingMode,
     ) -> Result<Option<ShadowPass<C>>, crate::CreationError>
     where
         F: glium::backend::Facade,
         C: SceneCore,
     {
-        self.components.create_shadow_pass(facade, scene_core)
+        self.components
+            .create_shadow_pass(facade, scene_core, instancing_mode)
     }
 
     pub fn create_shaded_scene_pass<F, C>(
         &self,
         facade: &F,
         scene_core: C,
+        instancing_mode: InstancingMode,
         setup: ShadedScenePassSetup,
     ) -> Result<ShadedScenePass<C>, crate::CreationError>
     where
@@ -132,22 +135,24 @@ impl Pipeline {
         C: SceneCore,
     {
         self.components
-            .create_shaded_scene_pass(facade, scene_core, setup)
+            .create_shaded_scene_pass(facade, scene_core, instancing_mode, setup)
     }
 
     pub fn create_plain_scene_pass<F, C>(
         &self,
         facade: &F,
         scene_core: C,
+        instancing_mode: InstancingMode,
     ) -> Result<PlainScenePass<C>, crate::CreationError>
     where
         F: glium::backend::Facade,
         C: SceneCore,
     {
         let shader_core = scene_core.scene_core();
-        let program = shader_core.build_program(facade, shader::InstancingMode::Vertex)?;
+        let program = shader_core.build_program(facade, instancing_mode)?;
 
         Ok(PlainScenePass {
+            instancing_mode,
             program,
             shader_core,
         })
@@ -246,16 +251,22 @@ impl<'a, F, S> StartFrameStep<'a, F, S> {
 }
 
 impl<'a, F: glium::backend::Facade, S: Surface> ShadowPassStep<'a, F, S> {
-    pub fn draw<C: SceneCore>(
+    pub fn draw<C, D>(
         self,
         pass: &Option<ShadowPass<C>>,
-        drawable: &impl Drawable<C::Instance, C::Vertex>,
+        drawable: &D,
         params: &C::Params,
-    ) -> Result<Self, DrawError> {
+    ) -> Result<Self, DrawError>
+    where
+        C: SceneCore,
+        D: Drawable<C::Instance, C::Vertex>,
+    {
         if let (Some(pass), Some(shadow_mapping)) = (
             pass.as_ref(),
             self.0.pipeline.components.shadow_mapping.as_ref(),
         ) {
+            assert_eq!(pass.instancing_mode, D::INSTANCING_MODE);
+
             shadow_mapping.shadow_pass(
                 self.0.facade,
                 drawable,
@@ -273,13 +284,19 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadowPassStep<'a, F, S> {
 }
 
 impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
-    pub fn draw<C: SceneCore>(
+    pub fn draw<C, D>(
         self,
         pass: &ShadedScenePass<C>,
-        drawable: &impl Drawable<C::Instance, C::Vertex>,
+        drawable: &D,
         params: &C::Params,
         draw_params: &glium::DrawParameters,
-    ) -> Result<Self, DrawError> {
+    ) -> Result<Self, DrawError>
+    where
+        C: SceneCore,
+        D: Drawable<C::Instance, C::Vertex>,
+    {
+        assert_eq!(pass.instancing_mode, D::INSTANCING_MODE);
+
         let pipeline = &self.0.pipeline;
 
         let mut output_textures = pipeline
@@ -404,13 +421,19 @@ impl<'a, F: glium::backend::Facade, S: Surface> AfterComposeStep<'a, F, S> {
 }
 
 impl<'a, F: glium::backend::Facade, S: Surface> PlainScenePassStep<'a, F, S> {
-    pub fn draw<C: SceneCore>(
+    pub fn draw<C, D>(
         self,
         pass: &PlainScenePass<C>,
-        drawable: &impl Drawable<C::Instance, C::Vertex>,
+        drawable: &D,
         params: &C::Params,
         draw_params: &glium::DrawParameters,
-    ) -> Result<Self, DrawError> {
+    ) -> Result<Self, DrawError>
+    where
+        C: SceneCore,
+        D: Drawable<C::Instance, C::Vertex>,
+    {
+        assert_eq!(pass.instancing_mode, D::INSTANCING_MODE);
+
         let mut framebuffer = glium::framebuffer::SimpleFrameBuffer::with_depth_buffer(
             self.0.facade,
             &self.0.pipeline.composition_texture,
