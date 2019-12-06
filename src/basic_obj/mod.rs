@@ -6,7 +6,7 @@ use std::ops::{Index, IndexMut};
 use glium::{self, implement_vertex};
 use num_traits::{FromPrimitive, ToPrimitive};
 
-use crate::shader::{InstanceInput, ToUniforms};
+use crate::shader::{InstanceInput, InstancingMode, ToUniforms};
 use crate::{CreationError, DrawError, Drawable, Mesh};
 
 pub use mesh::{load_wavefront, mesh_from_slices, CUBE_INDICES, CUBE_NORMALS, CUBE_POSITIONS};
@@ -137,6 +137,8 @@ impl<I: InstanceInput> Instancing<I> {
 struct DrawableImpl<'a, I: InstanceInput>(&'a Instancing<I>, &'a Resources);
 
 impl<'a, I: InstanceInput> Drawable<I, Vertex> for DrawableImpl<'a, I> {
+    const INSTANCING_MODE: InstancingMode = InstancingMode::Vertex;
+
     fn draw<U, S>(
         &self,
         program: &glium::Program,

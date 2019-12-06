@@ -1,4 +1,4 @@
-use crate::shader::{InstanceInput, ToUniforms};
+use crate::shader::{InstanceInput, InstancingMode, ToUniforms};
 use crate::{DrawError, Drawable, Mesh};
 
 #[derive(Clone)]
@@ -42,6 +42,8 @@ where
     I: InstanceInput,
     V: glium::vertex::Vertex,
 {
+    const INSTANCING_MODE: InstancingMode = InstancingMode::Uniforms;
+
     fn draw<U, S>(
         &self,
         program: &glium::Program,
