@@ -150,8 +150,8 @@ macro_rules! impl_to_vertex {
 #[macro_export]
 macro_rules! impl_uniform_input_and_to_vertex {
     ($ty:ident, $this:ident => { $( $field:ident: $type:ident => $value:expr, )* } $(,)? ) => {
-        impl_uniform_input!($ty, $this => { $($field: $type => $value, )* });
-        impl_to_vertex!($ty, $this => { $($field: $type => $value, )* });
+        $crate::impl_uniform_input!($ty, $this => { $($field: $type => $value, )* });
+        $crate::impl_to_vertex!($ty, $this => { $($field: $type => $value, )* });
     }
 }
 
