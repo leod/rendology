@@ -23,3 +23,4 @@ pub use pipeline::{
 };
 pub use screen_quad::ScreenQuad;
 pub use stage::{Context, Light, RenderList};
+pub use scene::SceneCore;
