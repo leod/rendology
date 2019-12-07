@@ -369,7 +369,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
                 .as_ref()
                 .map(|c| c.composition_pass_uniforms());
 
-            let uniforms = (&color_uniform, &deferred_shading_uniforms, &glow_uniforms);
+            let uniforms = (&color_uniform, (&deferred_shading_uniforms, &glow_uniforms));
 
             target_buffer.draw(
                 &pipeline.screen_quad.vertex_buffer,

@@ -22,7 +22,7 @@ pub trait InstanceInput: UniformInput {
 macro_rules! impl_uniform_input_detail {
     ($ty:ident, $mod:ident, $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)? ) => {
         #[derive(Copy, Clone, Debug)]
-        struct MyUniforms {
+        pub struct MyUniforms {
             $(
                 $field: $type,
             )*
@@ -203,7 +203,7 @@ impl<'a, 'n, T: AsUniformValue, R: Uniforms> ToUniforms for &'a UniformsStorage<
     }
 }
 
-struct UniformsPair<U1, U2>(U1, U2);
+pub struct UniformsPair<U1, U2>(U1, U2);
 
 impl<U1, U2> Uniforms for UniformsPair<U1, U2>
 where
@@ -233,7 +233,7 @@ where
     }
 }
 
-struct UniformsOption<U>(Option<U>);
+pub struct UniformsOption<U>(Option<U>);
 
 impl<U> Uniforms for UniformsOption<U>
 where
@@ -249,7 +249,7 @@ where
     }
 }
 
-struct UniformsRef<U>(U);
+pub struct UniformsRef<U>(U);
 
 impl<'b, U> Uniforms for UniformsRef<&'b U>
 where
