@@ -20,9 +20,10 @@ impl Default for Instance {
 
 impl_instance_input!(
     Instance,
+    instance,
     self => {
-        mat_model: Mat4 => self.transform.into(),
-        color: Vec4 => self.color.into(),
+        mat_model: [[f32; 4]; 4] => self.transform.into(),
+        color: [f32; 4] => self.color.into(),
     },
 );
 

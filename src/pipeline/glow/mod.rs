@@ -139,7 +139,7 @@ impl Glow {
         Ok(())
     }
 
-    pub fn composition_pass_uniforms(&self) -> impl ToUniforms + '_ {
+    pub fn composition_pass_uniforms(&self) -> impl glium::uniforms::Uniforms + '_ {
         uniform! {
             glow_texture: &self.glow_texture,
         }
