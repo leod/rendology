@@ -2,10 +2,14 @@ use glium::uniforms::{
     AsUniformValue, EmptyUniforms, UniformType, UniformValue, Uniforms, UniformsStorage,
 };
 
-pub trait ToUniforms {
+pub trait HasUniforms<'u> {
     type Uniforms: Uniforms;
+}
 
-    fn to_uniforms(&self) -> Self::Uniforms;
+pub trait ToUniforms {
+    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms
+    where
+        Self: HasUniforms<'u>;
 }
 
 pub trait UniformInput: ToUniforms {
@@ -41,10 +45,15 @@ macro_rules! impl_uniform_input_detail {
             }
         }
 
-        impl $crate::shader::ToUniforms for super::$ty {
+        impl<'u> $crate::shader::input::HasUniforms<'u> for super::$ty {
             type Uniforms = MyUniforms;
+        }
 
-            fn to_uniforms(&$this) -> MyUniforms {
+        impl $crate::shader::ToUniforms for super::$ty {
+            fn to_uniforms<'u>(&'u $this) -> MyUniforms
+            where
+                Self: $crate::shader::input::HasUniforms<'u>,
+            {
                 MyUniforms {
                     $(
                         $field: $value,
@@ -83,10 +92,15 @@ macro_rules! impl_instance_input {
             use glium::implement_vertex;
             implement_vertex!(MyUniforms, $($field,)*);
 
-            impl $crate::shader::ToUniforms for MyUniforms {
+            impl<'u> $crate::shader::input::HasUniforms<'u> for MyUniforms {
                 type Uniforms = Self;
+            }
 
-                fn to_uniforms(&self) -> Self {
+            impl $crate::shader::ToUniforms for MyUniforms {
+                fn to_uniforms<'u>(&'u self) -> <Self as $crate::shader::input::HasUniforms<'u>>::Uniforms
+                where
+                    Self: $crate::shader::input::HasUniforms<'u>,
+                {
                     self.clone()
                 }
             }
@@ -145,12 +159,21 @@ macro_rules! impl_instance_input {
     }
 }
 
-impl ToUniforms for () {
+impl<'u> HasUniforms<'u> for () {
     type Uniforms = EmptyUniforms;
+}
 
-    fn to_uniforms(&self) -> Self::Uniforms {
+impl ToUniforms for () {
+    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms
+    where
+        Self: HasUniforms<'u>,
+    {
         EmptyUniforms
     }
+}
+
+/*impl<'u> HasUniforms<'u> for &'b U {
+    type Uniforms = U::Uniforms;
 }
 
 impl<'b, U> ToUniforms for &'b U
@@ -162,6 +185,14 @@ where
     fn to_uniforms(&self) -> Self::Uniforms {
         (*self).to_uniforms()
     }
+}*/
+
+impl<'u, U1, U2> HasUniforms<'u> for (U1, U2)
+where
+    U1: HasUniforms<'u>,
+    U2: HasUniforms<'u>,
+{
+    type Uniforms = UniformsPair<<U1 as HasUniforms<'u>>::Uniforms, <U2 as HasUniforms<'u>>::Uniforms>;
 }
 
 impl<U1, U2> ToUniforms for (U1, U2)
@@ -169,36 +200,63 @@ where
     U1: ToUniforms,
     U2: ToUniforms,
 {
-    type Uniforms = UniformsPair<<U1 as ToUniforms>::Uniforms, <U2 as ToUniforms>::Uniforms>;
-
-    fn to_uniforms(&self) -> Self::Uniforms {
+    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms
+    where
+        Self: HasUniforms<'u>,
+    {
         UniformsPair(self.0.to_uniforms(), self.1.to_uniforms())
     }
+}
+
+impl<'u, U> HasUniforms<'u> for Option<U>
+where
+    U: HasUniforms<'u>,
+{
+    type Uniforms = UniformsOption<U::Uniforms>;
 }
 
 impl<U> ToUniforms for Option<U>
 where
     U: ToUniforms,
 {
-    type Uniforms = UniformsOption<U::Uniforms>;
-
-    fn to_uniforms(&self) -> Self::Uniforms {
+    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms
+    where
+        Self: HasUniforms<'u>,
+    {
         UniformsOption(self.as_ref().map(ToUniforms::to_uniforms))
     }
 }
 
-impl<'a> ToUniforms for &'a EmptyUniforms {
-    type Uniforms = UniformsRef<Self>;
+impl<'u> HasUniforms<'u> for EmptyUniforms {
+    type Uniforms = EmptyUniforms;
+}
 
-    fn to_uniforms(&self) -> Self::Uniforms {
-        UniformsRef(self)
+impl ToUniforms for EmptyUniforms {
+    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms
+    where
+        Self: HasUniforms<'u>,
+    {
+        EmptyUniforms
     }
 }
 
-impl<'a, 'n, T: AsUniformValue, R: Uniforms> ToUniforms for &'a UniformsStorage<'n, T, R> {
-    type Uniforms = UniformsRef<Self>;
+impl<'u, T, R: 'u> HasUniforms<'u> for UniformsStorage<'static, T, R>
+where
+    T: AsUniformValue + 'static,
+    R: Uniforms + 'static,
+{
+    type Uniforms = UniformsRef<&'u Self>;
+}
 
-    fn to_uniforms(&self) -> Self::Uniforms {
+impl<T, R> ToUniforms for UniformsStorage<'static, T, R>
+where
+    T: AsUniformValue + 'static,
+    R: Uniforms + 'static,
+{
+    fn to_uniforms<'u>(&'u self) -> UniformsRef<&'u Self>
+    where
+        Self: HasUniforms<'u>,
+    {
         UniformsRef(self)
     }
 }
