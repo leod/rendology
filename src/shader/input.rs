@@ -2,25 +2,10 @@ use glium::uniforms::{
     AsUniformValue, EmptyUniforms, UniformType, UniformValue, Uniforms, UniformsStorage,
 };
 
-pub struct ToUniformsWrapper<'b, U: ?Sized>(&'b U);
-
-impl<'b, U: ToUniforms> Uniforms for ToUniformsWrapper<'b, U> {
-    fn visit_values<'a, F>(&'a self, output: F)
-    where
-        F: FnMut(&str, UniformValue<'a>),
-    {
-        ToUniforms::visit_values(self.0, output);
-    }
-}
-
 pub trait ToUniforms {
-    fn visit_values<'a, F>(&'a self, output: F)
-    where
-        F: FnMut(&str, UniformValue<'a>);
+    type Uniforms: Uniforms;
 
-    fn to_uniforms(&self) -> ToUniformsWrapper<'_, Self> {
-        ToUniformsWrapper(self)
-    }
+    fn to_uniforms(&self) -> Self::Uniforms;
 }
 
 pub trait UniformInput: ToUniforms {
@@ -33,78 +18,46 @@ pub trait InstanceInput: UniformInput {
     fn to_vertex(&self) -> Self::Vertex;
 }
 
-// The following type aliases have the same name as variants in glium's
-// `UniformValue`. This allows us to use the same macro parameters foor
-// implementing both `ToUniforms` and `ToVertex`. Yeah, it's hacky though.
-#[allow(dead_code)]
-pub type Bool = bool;
-#[allow(dead_code)]
-pub type Float = f32;
-#[allow(dead_code)]
-pub type Vec2 = [f32; 2];
-#[allow(dead_code)]
-pub type Vec3 = [f32; 3];
-#[allow(dead_code)]
-pub type Vec4 = [f32; 4];
-#[allow(dead_code)]
-pub type Mat2 = [[f32; 2]; 2];
-#[allow(dead_code)]
-pub type Mat3 = [[f32; 3]; 3];
-#[allow(dead_code)]
-pub type Mat4 = [[f32; 4]; 4];
-
-/// Dummy enum to ease mapping from UniformValue variants to UniformType.
-/// This is just a helper for the `impl_to_uniforms` macro.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(dead_code)]
-pub enum UniformTypeDummy {
-    Bool,
-    Float,
-    Vec2,
-    Vec3,
-    Vec4,
-    Mat2,
-    Mat3,
-    Mat4,
-}
-
-impl UniformTypeDummy {
-    pub fn to_uniform_type(self) -> UniformType {
-        match self {
-            UniformTypeDummy::Bool => UniformType::Bool,
-            UniformTypeDummy::Float => UniformType::Float,
-            UniformTypeDummy::Vec2 => UniformType::FloatVec2,
-            UniformTypeDummy::Vec3 => UniformType::FloatVec3,
-            UniformTypeDummy::Vec4 => UniformType::FloatVec4,
-            UniformTypeDummy::Mat2 => UniformType::FloatMat2,
-            UniformTypeDummy::Mat3 => UniformType::FloatMat3,
-            UniformTypeDummy::Mat4 => UniformType::FloatMat4,
-        }
-    }
-}
-
 #[macro_export]
-macro_rules! impl_uniform_input {
-    ($ty:ident, $this:ident => { $( $field:ident: $variant:ident => $value:expr, )* } $(,)? ) => {
-        impl $crate::shader::ToUniforms for $ty {
-            fn visit_values<'a, F>(&'a $this, mut output: F)
+macro_rules! impl_uniform_input_detail {
+    ($ty:ident, $mod:ident, $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)? ) => {
+        #[derive(Copy, Clone, Debug)]
+        struct MyUniforms {
+            $(
+                $field: $type,
+            )*
+        }
+
+        impl glium::uniforms::Uniforms for MyUniforms {
+            fn visit_values<'a, F>(&'a self, mut output: F)
             where
                 F: FnMut(&str, glium::uniforms::UniformValue<'a>),
             {
+                use glium::uniforms::AsUniformValue;
+
                 $(
-                    output(stringify!($field), glium::uniforms::UniformValue::$variant($value));
+                    output(stringify!($field), self.$field.as_uniform_value());
                 )*
             }
         }
 
-        impl $crate::shader::UniformInput for $ty {
+        impl $crate::shader::ToUniforms for super::$ty {
+            type Uniforms = MyUniforms;
+
+            fn to_uniforms(&$this) -> MyUniforms {
+                MyUniforms {
+                    $(
+                        $field: $value,
+                    )*
+                }
+            }
+        }
+
+        impl $crate::shader::UniformInput for super::$ty {
             fn uniform_input_defs() -> Vec<(String, glium::uniforms::UniformType)> {
                 vec![
                     $(
-                        (
-                            stringify!($field).to_string(),
-                            $crate::shader::input::UniformTypeDummy::$variant.to_uniform_type()
-                        ),
+                        (stringify!($field).to_string(), <$type as $crate::shader::input::StaticUniformType>::TYPE),
                     )*
                 ]
             }
@@ -113,38 +66,45 @@ macro_rules! impl_uniform_input {
 }
 
 #[macro_export]
-macro_rules! impl_to_vertex {
-    ($ty:ident, $this:ident => { $( $field:ident: $variant:ident => $value:expr, )* } $(,)? ) => {
-        #[derive(Copy, Clone, Debug)]
-        pub struct MyVertex {
-            $(
-                $field: $crate::shader::input::$variant,
-            )*
-        }
-
-        use glium::implement_vertex;
-        implement_vertex!(MyVertex, $($field,)*);
-
-        impl $crate::shader::ToVertex for $ty {
-            type Vertex = MyVertex;
-
-            fn to_vertex(&$this) -> Self::Vertex {
-                Self::Vertex {
-                    $(
-                        $field: $value,
-                    )*
-                }
-            }
+macro_rules! impl_uniform_input {
+    ($ty:ident, $mod:ident, $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)? ) => {
+        mod $mod {
+            $crate::impl_uniform_input_detail!($ty, $mod, $this => { $($field: $type => $value, )* });
         }
     }
 }
 
 #[macro_export]
 macro_rules! impl_instance_input {
-    ($ty:ident, $this:ident => { $( $field:ident: $variant:ident => $value:expr, )* } $(,)? ) => {
-        $crate::impl_uniform_input!($ty, $this => { $($field: $variant => $value, )* });
+    ($ty:ident, $mod:ident, $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)? ) => {
+        mod $mod {
+            $crate::impl_uniform_input_detail!($ty, $mod, $this => { $($field: $type => $value, )* });
 
-        #[derive(Copy, Clone, Debug)]
+            use glium::implement_vertex;
+            implement_vertex!(MyUniforms, $($field,)*);
+
+            impl $crate::shader::ToUniforms for MyUniforms {
+                type Uniforms = Self;
+
+                fn to_uniforms(&self) -> Self {
+                    self.clone()
+                }
+            }
+
+            impl $crate::shader::InstanceInput for super::$ty {
+                type Vertex = MyUniforms;
+
+                fn to_vertex(&$this) -> Self::Vertex {
+                    Self::Vertex {
+                        $(
+                            $field: $value,
+                        )*
+                    }
+                }
+            }
+        }
+
+        /*#[derive(Copy, Clone, Debug)]
         pub struct MyVertex {
             $(
                 $field: $crate::shader::input::$variant,
@@ -181,15 +141,26 @@ macro_rules! impl_instance_input {
                     )*
                 }
             }
-        }
+        }*/
     }
 }
 
 impl ToUniforms for () {
-    fn visit_values<'a, F>(&'a self, _: F)
-    where
-        F: FnMut(&str, UniformValue<'a>),
-    {
+    type Uniforms = EmptyUniforms;
+
+    fn to_uniforms(&self) -> Self::Uniforms {
+        EmptyUniforms
+    }
+}
+
+impl<'b, U> ToUniforms for &'b U
+where
+    U: ToUniforms,
+{
+    type Uniforms = U::Uniforms;
+
+    fn to_uniforms(&self) -> Self::Uniforms {
+        (*self).to_uniforms()
     }
 }
 
@@ -198,42 +169,10 @@ where
     U1: ToUniforms,
     U2: ToUniforms,
 {
-    fn visit_values<'a, F>(&'a self, mut output: F)
-    where
-        F: FnMut(&str, UniformValue<'a>),
-    {
-        // F is not Copy, so we have to wrap into a lambda here
-        self.0.visit_values(|x, y| output(x, y));
-        self.1.visit_values(|x, y| output(x, y));
-    }
-}
+    type Uniforms = UniformsPair<<U1 as ToUniforms>::Uniforms, <U2 as ToUniforms>::Uniforms>;
 
-impl<U1, U2, U3> ToUniforms for (U1, U2, U3)
-where
-    U1: ToUniforms,
-    U2: ToUniforms,
-    U3: ToUniforms,
-{
-    fn visit_values<'a, F>(&'a self, mut output: F)
-    where
-        F: FnMut(&str, UniformValue<'a>),
-    {
-        // F is not Copy, so we have to wrap into a lambda here
-        self.0.visit_values(|x, y| output(x, y));
-        self.1.visit_values(|x, y| output(x, y));
-        self.2.visit_values(|x, y| output(x, y));
-    }
-}
-
-impl<'b, U> ToUniforms for &'b U
-where
-    U: ToUniforms,
-{
-    fn visit_values<'a, F>(&'a self, output: F)
-    where
-        F: FnMut(&str, UniformValue<'a>),
-    {
-        U::visit_values(self, output)
+    fn to_uniforms(&self) -> Self::Uniforms {
+        UniformsPair(self.0.to_uniforms(), self.1.to_uniforms())
     }
 }
 
@@ -241,30 +180,86 @@ impl<U> ToUniforms for Option<U>
 where
     U: ToUniforms,
 {
+    type Uniforms = UniformsOption<U::Uniforms>;
+
+    fn to_uniforms(&self) -> Self::Uniforms {
+        UniformsOption(self.as_ref().map(ToUniforms::to_uniforms))
+    }
+}
+
+impl<'a> ToUniforms for &'a EmptyUniforms {
+    type Uniforms = UniformsRef<Self>;
+
+    fn to_uniforms(&self) -> Self::Uniforms {
+        UniformsRef(self)
+    }
+}
+
+impl<'a, 'n, T: AsUniformValue, R: Uniforms> ToUniforms for &'a UniformsStorage<'n, T, R> {
+    type Uniforms = UniformsRef<Self>;
+
+    fn to_uniforms(&self) -> Self::Uniforms {
+        UniformsRef(self)
+    }
+}
+
+struct UniformsPair<U1, U2>(U1, U2);
+
+impl<U1, U2> Uniforms for UniformsPair<U1, U2>
+where
+    U1: Uniforms,
+    U2: Uniforms,
+{
+    fn visit_values<'a, F>(&'a self, mut output: F)
+    where
+        F: FnMut(&str, UniformValue<'a>),
+    {
+        self.0.visit_values(|name, value| output(name, value));
+        self.1.visit_values(output);
+    }
+}
+
+impl<'b, U1, U2> Uniforms for &'b UniformsPair<U1, U2>
+where
+    U1: Uniforms,
+    U2: Uniforms,
+{
+    fn visit_values<'a, F>(&'a self, mut output: F)
+    where
+        F: FnMut(&str, UniformValue<'a>),
+    {
+        self.0.visit_values(|name, value| output(name, value));
+        self.1.visit_values(output);
+    }
+}
+
+struct UniformsOption<U>(Option<U>);
+
+impl<U> Uniforms for UniformsOption<U>
+where
+    U: Uniforms,
+{
     fn visit_values<'a, F>(&'a self, output: F)
     where
         F: FnMut(&str, UniformValue<'a>),
     {
-        if let Some(uniforms) = self.as_ref() {
+        if let Some(uniforms) = self.0.as_ref() {
             uniforms.visit_values(output);
         }
     }
 }
 
-impl ToUniforms for EmptyUniforms {
-    fn visit_values<'a, F>(&'a self, _output: F)
-    where
-        F: FnMut(&str, UniformValue<'a>),
-    {
-    }
-}
+struct UniformsRef<U>(U);
 
-impl<'n, T: AsUniformValue, R: Uniforms> ToUniforms for UniformsStorage<'n, T, R> {
+impl<'b, U> Uniforms for UniformsRef<&'b U>
+where
+    U: Uniforms,
+{
     fn visit_values<'a, F>(&'a self, output: F)
     where
         F: FnMut(&str, UniformValue<'a>),
     {
-        Uniforms::visit_values(self, output);
+        self.0.visit_values(output);
     }
 }
 
@@ -285,4 +280,40 @@ where
 
         result
     }
+}
+
+pub trait StaticUniformType {
+    const TYPE: UniformType;
+}
+
+impl StaticUniformType for bool {
+    const TYPE: UniformType = UniformType::Bool;
+}
+
+impl StaticUniformType for f32 {
+    const TYPE: UniformType = UniformType::Float;
+}
+
+impl StaticUniformType for [f32; 2] {
+    const TYPE: UniformType = UniformType::FloatVec2;
+}
+
+impl StaticUniformType for [f32; 3] {
+    const TYPE: UniformType = UniformType::FloatVec3;
+}
+
+impl StaticUniformType for [f32; 4] {
+    const TYPE: UniformType = UniformType::FloatVec4;
+}
+
+impl StaticUniformType for [[f32; 2]; 2] {
+    const TYPE: UniformType = UniformType::FloatMat2;
+}
+
+impl StaticUniformType for [[f32; 3]; 3] {
+    const TYPE: UniformType = UniformType::FloatMat3;
+}
+
+impl StaticUniformType for [[f32; 4]; 4] {
+    const TYPE: UniformType = UniformType::FloatMat4;
 }
