@@ -144,7 +144,7 @@ impl ShadowMapping {
     }
 
     /// Returns uniforms for binding the shadow map during scene pass.
-    pub fn scene_pass_uniforms(&self, context: &Context) -> impl glium::uniforms::Uniforms + '_ {
+    pub fn scene_pass_uniforms(&self, context: &Context) -> impl ToUniforms + '_ {
         let light_projection = self.light_projection();
         let light_view = self.light_view(context);
         let mat_light_view_projection: [[f32; 4]; 4] = (light_projection * light_view).into();
@@ -152,9 +152,10 @@ impl ShadowMapping {
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
             .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest);
 
-        uniform! {
+        ()
+        /*uniform! {
             mat_light_view_projection: mat_light_view_projection,
             shadow_map: shadow_map,
-        }
+        }*/
     }
 }

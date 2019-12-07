@@ -191,14 +191,15 @@ impl DeferredShading {
         light_buffer.clear_color(0.0, 0.0, 0.0, 1.0);
 
         let textures = (
-            uniform! {
+            &uniform! {
                 position_texture: &self.scene_textures[0],
                 normal_texture: &self.scene_textures[1],
             },
-            self.shadow_texture.as_ref().map(|shadow_texture| {
-                uniform! {
+            &self.shadow_texture.as_ref().map(|shadow_texture| {
+                ()
+                /*uniform! {
                     shadow_texture: shadow_texture,
-                }
+                }*/
             }),
         );
 
@@ -236,7 +237,7 @@ impl DeferredShading {
                     viewport: camera.viewport,
                 };
 
-                let uniforms = (&textures, no_camera, &light);
+                let uniforms = (&textures, (no_camera, &light));
 
                 light_buffer.draw(
                     &self.screen_quad.vertex_buffer,
@@ -271,10 +272,11 @@ impl DeferredShading {
         Ok(())
     }
 
-    pub fn composition_pass_uniforms(&self) -> impl glium::uniforms::Uniforms + '_ {
-        uniform! {
+    pub fn composition_pass_uniforms(&self) -> impl ToUniforms + '_ {
+        ()
+        /*uniform! {
             light_texture: &self.light_texture,
-        }
+        }*/
     }
 
     fn create_texture<F: glium::backend::Facade>(
