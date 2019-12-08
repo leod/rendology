@@ -74,6 +74,7 @@ impl Pipeline {
                 &self.shadow_pass,
                 &self.cube_instancing.as_drawable(&self.cube),
                 &(),
+                &draw_params,
             )?
             .shaded_scene_pass()
             .draw(
