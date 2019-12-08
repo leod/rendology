@@ -29,7 +29,7 @@ rendology::impl_instance_input!(
 struct Core;
 
 impl SceneCore for Core {
-    type Params = &'static Params<'static>;
+    type Params = Params<'static>;
     type Instance = Instance;
     type Vertex = basic_obj::Vertex;
 
