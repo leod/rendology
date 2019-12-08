@@ -173,17 +173,18 @@ impl Components {
         Ok(())
     }
 
-    pub fn scene_pass<C, D, S>(
+    pub fn scene_pass<C, D, P, S>(
         &self,
         drawable: &D,
         program: &glium::Program,
-        params: (&Context, &C::Params),
+        params: (&Context, &P),
         draw_params: &glium::DrawParameters,
         target: &mut S,
     ) -> Result<(), DrawError>
     where
         C: SceneCore,
         D: Drawable<C::Instance, C::Vertex>,
+        P: shader::input::CompatibleWith<C::Params>,
         S: glium::Surface,
     {
         let uniforms = (
@@ -220,7 +221,7 @@ impl Components {
 
     pub fn shaded_scene_pass_output_textures(
         &self,
-        setup: &ShadedScenePassSetup,
+        _setup: &ShadedScenePassSetup,
     ) -> Vec<(&'static str, &glium::texture::Texture2d)> {
         let mut textures = Vec::new();
 

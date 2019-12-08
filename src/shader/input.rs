@@ -22,14 +22,10 @@ pub trait InstanceInput: UniformInput {
     fn to_vertex(&self) -> Self::Vertex;
 }
 
+pub trait CompatibleWith<U: ToUniforms>: ToUniforms {}
+
 impl<'u> HasUniforms<'u> for () {
     type Uniforms = EmptyUniforms;
-}
-
-impl ToUniforms for () {
-    fn to_uniforms(&self) -> EmptyUniforms {
-        EmptyUniforms
-    }
 }
 
 impl<'u, 'b, U> HasUniforms<'u> for &'b U
@@ -37,15 +33,6 @@ where
     U: HasUniforms<'u>,
 {
     type Uniforms = U::Uniforms;
-}
-
-impl<'b, U> ToUniforms for &'b U
-where
-    U: ToUniforms,
-{
-    fn to_uniforms<'u>(&'u self) -> <U as HasUniforms<'u>>::Uniforms {
-        (*self).to_uniforms()
-    }
 }
 
 impl<'u, U1, U2> HasUniforms<'u> for (U1, U2)
@@ -57,16 +44,6 @@ where
         UniformsPair<<U1 as HasUniforms<'u>>::Uniforms, <U2 as HasUniforms<'u>>::Uniforms>;
 }
 
-impl<U1, U2> ToUniforms for (U1, U2)
-where
-    U1: ToUniforms,
-    U2: ToUniforms,
-{
-    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms {
-        UniformsPair(self.0.to_uniforms(), self.1.to_uniforms())
-    }
-}
-
 impl<'u, U1, U2, U3> HasUniforms<'u> for (U1, U2, U3)
 where
     U1: HasUniforms<'u>,
@@ -75,6 +52,67 @@ where
 {
     type Uniforms =
         UniformsPair<<U1 as HasUniforms<'u>>::Uniforms, <(U2, U3) as HasUniforms<'u>>::Uniforms>;
+}
+
+impl<'u, U1, U2, U3, U4> HasUniforms<'u> for (U1, U2, U3, U4)
+where
+    U1: HasUniforms<'u>,
+    U2: HasUniforms<'u>,
+    U3: HasUniforms<'u>,
+    U4: HasUniforms<'u>,
+{
+    type Uniforms = UniformsPair<
+        <U1 as HasUniforms<'u>>::Uniforms,
+        <(U2, U3, U4) as HasUniforms<'u>>::Uniforms,
+    >;
+}
+
+impl<'u, U> HasUniforms<'u> for Option<U>
+where
+    U: HasUniforms<'u>,
+{
+    type Uniforms = UniformsOption<U::Uniforms>;
+}
+
+impl<'u, 'a> HasUniforms<'u> for &'a EmptyUniforms {
+    type Uniforms = UniformsRef<Self>;
+}
+
+impl<'u> HasUniforms<'u> for MyEmptyUniforms {
+    type Uniforms = MyEmptyUniforms;
+}
+
+impl<'u, 'a, 'n, T: AsUniformValue, R: Uniforms> HasUniforms<'u> for &'a UniformsStorage<'n, T, R> {
+    type Uniforms = UniformsRef<Self>;
+}
+
+impl<'u, 'a, 'n, T: AsUniformValue, R: Uniforms> HasUniforms<'u> for MyUniformsStorage<'n, T, R> {
+    type Uniforms = Self;
+}
+
+impl ToUniforms for () {
+    fn to_uniforms(&self) -> EmptyUniforms {
+        EmptyUniforms
+    }
+}
+
+impl<'b, U> ToUniforms for &'b U
+where
+    U: ToUniforms,
+{
+    fn to_uniforms<'u>(&'u self) -> <U as HasUniforms<'u>>::Uniforms {
+        (*self).to_uniforms()
+    }
+}
+
+impl<U1, U2> ToUniforms for (U1, U2)
+where
+    U1: ToUniforms,
+    U2: ToUniforms,
+{
+    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms {
+        UniformsPair(self.0.to_uniforms(), self.1.to_uniforms())
+    }
 }
 
 impl<U1, U2, U3> ToUniforms for (U1, U2, U3)
@@ -89,19 +127,6 @@ where
             UniformsPair(self.1.to_uniforms(), self.2.to_uniforms()),
         )
     }
-}
-
-impl<'u, U1, U2, U3, U4> HasUniforms<'u> for (U1, U2, U3, U4)
-where
-    U1: HasUniforms<'u>,
-    U2: HasUniforms<'u>,
-    U3: HasUniforms<'u>,
-    U4: HasUniforms<'u>,
-{
-    type Uniforms = UniformsPair<
-        <U1 as HasUniforms<'u>>::Uniforms,
-        <(U2, U3, U4) as HasUniforms<'u>>::Uniforms,
-    >;
 }
 
 impl<U1, U2, U3, U4> ToUniforms for (U1, U2, U3, U4)
@@ -122,13 +147,6 @@ where
     }
 }
 
-impl<'u, U> HasUniforms<'u> for Option<U>
-where
-    U: HasUniforms<'u>,
-{
-    type Uniforms = UniformsOption<U::Uniforms>;
-}
-
 impl<U> ToUniforms for Option<U>
 where
     U: ToUniforms,
@@ -138,28 +156,20 @@ where
     }
 }
 
-impl<'u, 'a> HasUniforms<'u> for &'a EmptyUniforms {
-    type Uniforms = UniformsRef<Self>;
-}
-
 impl<'a> ToUniforms for &'a EmptyUniforms {
     fn to_uniforms(&self) -> UniformsRef<Self> {
         UniformsRef(self)
     }
 }
 
-impl<'u, 'a, 'n, T: AsUniformValue, R: Uniforms> HasUniforms<'u> for &'a UniformsStorage<'n, T, R> {
-    type Uniforms = UniformsRef<Self>;
-}
-
-impl<'a, 'n, T: AsUniformValue, R: Uniforms> ToUniforms for &'a UniformsStorage<'n, T, R> {
+impl<'a, 'n, T, R> ToUniforms for &'a UniformsStorage<'n, T, R>
+where
+    T: AsUniformValue,
+    R: Uniforms,
+{
     fn to_uniforms(&self) -> UniformsRef<Self> {
         UniformsRef(self)
     }
-}
-
-impl<'u> HasUniforms<'u> for MyEmptyUniforms {
-    type Uniforms = MyEmptyUniforms;
 }
 
 impl<'a> ToUniforms for MyEmptyUniforms {
@@ -168,12 +178,10 @@ impl<'a> ToUniforms for MyEmptyUniforms {
     }
 }
 
-impl<'u, 'a, 'n, T: AsUniformValue, R: Uniforms> HasUniforms<'u> for MyUniformsStorage<'n, T, R> {
-    type Uniforms = Self;
-}
-
-impl<'a, 'n, T: AsUniformValue, R: Uniforms> ToUniforms for MyUniformsStorage<'n, T, R>
+impl<'a, 'n, T, R> ToUniforms for MyUniformsStorage<'n, T, R>
 where
+    T: AsUniformValue,
+    R: Uniforms,
     Self: Clone,
 {
     fn to_uniforms(&self) -> Self {
@@ -210,6 +218,16 @@ where
         self.1.visit_values(output);
     }
 }
+
+impl CompatibleWith<()> for () {}
+impl<'b, U> CompatibleWith<&'b U> for &'b U where U: ToUniforms {}
+impl<U1, U2> CompatibleWith<(U1, U2)> for (U1, U2)
+where
+    U1: ToUniforms,
+    U2: ToUniforms,
+{
+}
+impl<U> CompatibleWith<Option<U>> for Option<U> where U: ToUniforms {}
 
 pub struct UniformsOption<U>(Option<U>);
 
@@ -568,6 +586,9 @@ macro_rules! impl_uniform_input_with_lifetime {
                         )*
                     ]
                 }
+            }
+
+            impl<'a> $crate::shader::input::CompatibleWith<$ty<'static>> for $ty<'a> {
             }
 
             ()
