@@ -152,10 +152,9 @@ impl ShadowMapping {
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
             .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest);
 
-        ()
-        /*uniform! {
+        plain_uniforms! {
             mat_light_view_projection: mat_light_view_projection,
             shadow_map: shadow_map,
-        }*/
+        }
     }
 }

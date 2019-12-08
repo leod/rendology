@@ -196,10 +196,9 @@ impl DeferredShading {
                 normal_texture: &self.scene_textures[1],
             },
             &self.shadow_texture.as_ref().map(|shadow_texture| {
-                ()
-                /*uniform! {
+                plain_uniforms! {
                     shadow_texture: shadow_texture,
-                }*/
+                }
             }),
         );
 
@@ -273,10 +272,9 @@ impl DeferredShading {
     }
 
     pub fn composition_pass_uniforms(&self) -> impl ToUniforms + '_ {
-        ()
-        /*uniform! {
+        plain_uniforms! {
             light_texture: &self.light_texture,
-        }*/
+        }
     }
 
     fn create_texture<F: glium::backend::Facade>(

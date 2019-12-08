@@ -140,7 +140,9 @@ impl Glow {
     }
 
     pub fn composition_pass_uniforms(&self) -> impl ToUniforms + '_ {
-        ()
+        plain_uniforms! {
+            glow_texture: &self.glow_texture,
+        }
     }
 
     fn create_texture<F: glium::backend::Facade>(
