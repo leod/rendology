@@ -303,7 +303,6 @@ macro_rules! plain_uniforms {
 macro_rules! impl_uniform_input_detail {
     (
         $ty:ident,
-        $mod:ident,
         $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
     ) => {
         #[derive(Copy, Clone, Debug)]
@@ -357,16 +356,16 @@ macro_rules! impl_uniform_input_detail {
 macro_rules! impl_uniform_input {
     (
         $ty:ident,
-        $mod:ident,
         $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
     ) => {
-        mod $mod {
+        const _: () = {
             $crate::impl_uniform_input_detail!(
                 $ty,
-                $mod,
                 $this => { $($field: $type => $value, )* }
             );
-        }
+
+            ()
+        };
     }
 }
 
@@ -374,13 +373,11 @@ macro_rules! impl_uniform_input {
 macro_rules! impl_instance_input {
     (
         $ty:ident,
-        $mod:ident,
         $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
     ) => {
-        mod $mod {
+        const _: () = {
             $crate::impl_uniform_input_detail!(
                 $ty,
-                $mod,
                 $this => { $($field: $type => $value, )* }
             );
 
@@ -406,6 +403,8 @@ macro_rules! impl_instance_input {
                     }
                 }
             }
-        }
+
+            ()
+        };
     }
 }
