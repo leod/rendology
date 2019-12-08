@@ -45,6 +45,20 @@ impl RenderPassComponent for ShadowMapping {
     }
 }
 
+/*struct ScenePassUniforms<'a> {
+    mat_light_view_projection: na::Matrix4<f32>,
+    shadow_map: glium::uniforms::Sampler<'a, glium::texture::Texture2d>,
+}
+
+impl_uniform_input_with_lifetime!(
+    ScenePassUniforms,
+    'a,
+    self => {
+        mat_light_view_projection: [[f32; 4]; 4] => self.mat_light_view_projection.into(),
+        shadow_map: glium::uniforms::Sampler<'a, glium::texture::Texture2d> => self.shadow_map,
+    },
+);*/
+
 impl ScenePassComponent for ShadowMapping {
     /// Transforms a shader so that it shadows the scene.
     ///
