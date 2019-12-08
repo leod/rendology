@@ -92,6 +92,7 @@ struct Pipeline {
     my_scene_pass: ShadedScenePass<my_scene::Core>,
 
     cube: Mesh<basic_obj::Vertex>,
+    texture: glium::texture::CompressedSrgbTexture2d,
 }
 
 impl Pipeline {
@@ -127,6 +128,20 @@ impl Pipeline {
 
         let cube = BasicObj::Cube.create_mesh(facade)?;
 
+        let texture = {
+            let image = image::load(
+                std::io::Cursor::new(&include_bytes!("texture.png")[..]),
+                image::PNG,
+            )
+            .unwrap()
+            .to_rgba();
+            let dimensions = image.dimensions();
+            let image =
+                glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), dimensions);
+
+            glium::texture::CompressedSrgbTexture2d::new(&display, image).unwrap()
+        };
+
         Ok(Pipeline {
             rendology,
             shadow_pass,
@@ -134,6 +149,7 @@ impl Pipeline {
             my_shadow_pass,
             my_scene_pass,
             cube,
+            texture,
         })
     }
 
