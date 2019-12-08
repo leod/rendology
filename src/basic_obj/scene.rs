@@ -50,7 +50,7 @@ impl SceneCore for Core {
                 "mat_projection * mat_view * v_world_pos",
             );
 
-        let fragment = shader::FragmentCore::default()
+        let fragment = shader::FragmentCore::empty()
             .with_in_def(shader::defs::v_color())
             .with_out(shader::defs::f_color(), "v_color");
 
