@@ -230,13 +230,11 @@ impl Components {
                 .map_or(Vec::new(), |c| c.output_textures()),
         );
 
-        if setup.draw_glowing {
-            textures.extend(
-                self.glow
-                    .as_ref()
-                    .map_or(Vec::new(), |c| c.output_textures()),
-            );
-        }
+        textures.extend(
+            self.glow
+                .as_ref()
+                .map_or(Vec::new(), |c| c.output_textures()),
+        );
 
         textures
     }
