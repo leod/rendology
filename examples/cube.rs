@@ -11,6 +11,12 @@ use rendology::{
 
 const WINDOW_SIZE: (u32, u32) = (1280, 720);
 
+#[derive(Default)]
+struct Scene {
+    cubes: RenderList<basic_obj::Instance>,
+    lights: Vec<Light>,
+}
+
 struct Pipeline {
     rendology: rendology::Pipeline,
 
@@ -56,11 +62,11 @@ impl Pipeline {
         &mut self,
         facade: &F,
         context: &rendology::Context,
-        lights: &[Light],
-        cubes: &RenderList<basic_obj::Instance>,
+        scene: &Scene,
         target: &mut S,
     ) -> Result<(), rendology::DrawError> {
-        self.cube_instancing.update(facade, cubes.as_slice())?;
+        self.cube_instancing
+            .update(facade, scene.cubes.as_slice())?;
 
         let draw_params = glium::DrawParameters {
             backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
@@ -83,7 +89,7 @@ impl Pipeline {
                 &(),
                 &draw_params,
             )?
-            .compose(&lights)?
+            .compose(&scene.lights)?
             .present()
     }
 }
@@ -117,42 +123,43 @@ fn main() {
             }
         });
 
-        let angle = start_time.elapsed().as_fractional_secs() as f32;
-
-        let mut render_list = RenderList::default();
-        render_list.add(basic_obj::Instance {
-            transform: na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 3.0))
-                * na::Matrix4::from_euler_angles(angle, angle, angle),
-            color: na::Vector4::new(0.9, 0.9, 0.9, 1.0),
-        });
-        render_list.add(basic_obj::Instance {
-            transform: na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(10.0, 10.0, 0.1)),
-            color: na::Vector4::new(0.0, 1.0, 0.0, 1.0),
-        });
-
-        let lights = vec![Light {
-            position: na::Point3::new(10.0, 10.0, 10.0),
-            attenuation: na::Vector3::new(1.0, 0.0, 0.0),
-            color: na::Vector3::new(1.0, 1.0, 1.0),
-            is_main: true,
-            ..Default::default()
-        }];
+        let time = start_time.elapsed().as_fractional_secs() as f32;
+        let scene = scene(time);
 
         let mut target = display.draw();
         let render_context = render_context(target.get_dimensions());
 
         pipeline
-            .draw_frame(
-                &display,
-                &render_context,
-                &lights,
-                &render_list,
-                &mut target,
-            )
+            .draw_frame(&display, &render_context, &scene, &mut target)
             .unwrap();
 
         target.finish().unwrap();
     }
+}
+
+fn scene(time: f32) -> Scene {
+    let mut scene = Scene::default();
+
+    scene.cubes.add(basic_obj::Instance {
+        transform: na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 3.0))
+            * na::Matrix4::from_euler_angles(time, time, time),
+        color: na::Vector4::new(0.9, 0.9, 0.9, 1.0),
+    });
+
+    scene.cubes.add(basic_obj::Instance {
+        transform: na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(10.0, 10.0, 0.1)),
+        color: na::Vector4::new(0.0, 1.0, 0.0, 1.0),
+    });
+
+    scene.lights.push(Light {
+        position: na::Point3::new(10.0, 10.0, 10.0),
+        attenuation: na::Vector3::new(1.0, 0.0, 0.0),
+        color: na::Vector3::new(1.0, 1.0, 1.0),
+        is_main: true,
+        ..Default::default()
+    });
+
+    scene
 }
 
 fn render_context(target_size: (u32, u32)) -> rendology::Context {
