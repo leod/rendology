@@ -1,13 +1,13 @@
 use std::time::Instant;
 
+use floating_duration::TimeAsFloat;
+use glium::{glutin, Surface};
+use nalgebra as na;
+
 use rendology::{
     basic_obj, BasicObj, Instancing, InstancingMode, Light, Mesh, RenderList, ShadedScenePass,
     ShadedScenePassSetup, ShadowPass,
 };
-
-use floating_duration::TimeAsFloat;
-use glium::{glutin, Surface};
-use nalgebra as na;
 
 const WINDOW_SIZE: (u32, u32) = (1280, 720);
 
