@@ -249,16 +249,17 @@ impl<'a, F, S> StartFrameStep<'a, F, S> {
 }
 
 impl<'a, F: glium::backend::Facade, S: Surface> ShadowPassStep<'a, F, S> {
-    pub fn draw<C, D>(
+    pub fn draw<C, D, P>(
         self,
         pass: &Option<ShadowPass<C>>,
         drawable: &D,
-        params: &C::Params,
+        params: &P,
         draw_params: &glium::DrawParameters,
     ) -> Result<Self, DrawError>
     where
         C: SceneCore,
         D: Drawable<C::Instance, C::Vertex>,
+        P: shader::input::CompatibleWith<C::Params>,
     {
         if let (Some(pass), Some(shadow_mapping)) = (
             pass.as_ref(),
@@ -284,16 +285,17 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadowPassStep<'a, F, S> {
 }
 
 impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
-    pub fn draw<C, D>(
+    pub fn draw<C, D, P>(
         self,
         pass: &ShadedScenePass<C>,
         drawable: &D,
-        params: &C::Params,
+        params: &P,
         draw_params: &glium::DrawParameters,
     ) -> Result<Self, DrawError>
     where
         C: SceneCore,
         D: Drawable<C::Instance, C::Vertex>,
+        P: shader::input::CompatibleWith<C::Params>,
     {
         assert_eq!(pass.instancing_mode, D::INSTANCING_MODE);
 
@@ -319,7 +321,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
             ..draw_params.clone()
         };
 
-        pipeline.components.scene_pass::<C, _, _>(
+        pipeline.components.scene_pass::<C, _, _, _>(
             drawable,
             &pass.program,
             (&self.0.context, params),
@@ -421,16 +423,17 @@ impl<'a, F: glium::backend::Facade, S: Surface> AfterComposeStep<'a, F, S> {
 }
 
 impl<'a, F: glium::backend::Facade, S: Surface> PlainScenePassStep<'a, F, S> {
-    pub fn draw<C, D>(
+    pub fn draw<C, D, P>(
         self,
         pass: &PlainScenePass<C>,
         drawable: &D,
-        params: &C::Params,
+        params: &P,
         draw_params: &glium::DrawParameters,
     ) -> Result<Self, DrawError>
     where
         C: SceneCore,
         D: Drawable<C::Instance, C::Vertex>,
+        P: shader::input::CompatibleWith<C::Params>,
     {
         assert_eq!(pass.instancing_mode, D::INSTANCING_MODE);
 

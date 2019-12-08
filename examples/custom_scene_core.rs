@@ -199,9 +199,7 @@ impl Pipeline {
                 &Default::default(),
             )?
             .compose(&scene.lights)?
-            .present();
-
-        Ok(())
+            .present()
     }
 }
 
