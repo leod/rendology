@@ -20,10 +20,7 @@ use crate::{shader, Context, DrawError, Drawable, Light, ScreenQuad};
 use components::Components;
 
 pub use config::Config;
-pub use render_pass::{
-    CompositionPassComponent, PlainScenePass, RenderPassComponent, ScenePassComponent,
-    ShadedScenePass, ShadedScenePassSetup, ShadowPass,
-};
+pub use render_pass::{PlainScenePass, ShadedScenePass, ShadedScenePassSetup, ShadowPass};
 
 pub struct Pipeline {
     components: Components,
