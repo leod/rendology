@@ -78,22 +78,6 @@ impl<'a, 'n, T: AsUniformValue, R: Uniforms> ToUniforms for &'a UniformsStorage<
     }
 }
 
-/*impl<'a> ToUniforms for &'a MyEmptyUniforms {
-    type Uniforms = UniformsRef<Self>;
-
-    fn to_uniforms(&self) -> Self::Uniforms {
-        UniformsRef(self)
-    }
-}
-
-impl<'a, 'n, T: AsUniformValue, R: Uniforms> ToUniforms for &'a MyUniformsStorage<'n, T, R> {
-    type Uniforms = UniformsRef<Self>;
-
-    fn to_uniforms(&self) -> Self::Uniforms {
-        UniformsRef(self)
-    }
-}*/
-
 impl<'a> ToUniforms for MyEmptyUniforms {
     type Uniforms = MyEmptyUniforms;
 
@@ -253,8 +237,8 @@ where
 {
     pub fn new(name: &'n str, value: T) -> Self {
         Self {
-            name: name,
-            value: value,
+            name,
+            value,
             rest: MyEmptyUniforms,
         }
     }
@@ -293,8 +277,35 @@ where
 }
 
 #[macro_export]
+macro_rules! plain_uniforms {
+    () => {
+        $crate::shader::input::MyEmptyUniforms
+    };
+    ($field:ident: $value:expr) => {
+        $crate::shader::input::MyUniformsStorage::new(stringify!($field), $value)
+    };
+    ($field1:ident: $value1:expr, $($field:ident: $value:expr),+) => {
+        {
+            let uniforms =
+                $crate::shader::input::MyUniformsStorage::new(stringify!($field1), $value1);
+            $(
+                let uniforms = uniforms.add(stringify!($field), $value);
+            )+
+            uniforms
+        }
+    };
+    ($($field:ident: $value:expr),*,) => {
+        plain_uniforms!($($field: $value),*)
+    };
+}
+
+#[macro_export]
 macro_rules! impl_uniform_input_detail {
-    ($ty:ident, $mod:ident, $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)? ) => {
+    (
+        $ty:ident,
+        $mod:ident,
+        $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
+    ) => {
         #[derive(Copy, Clone, Debug)]
         pub struct MyUniforms {
             $(
@@ -331,7 +342,10 @@ macro_rules! impl_uniform_input_detail {
             fn uniform_input_defs() -> Vec<(String, glium::uniforms::UniformType)> {
                 vec![
                     $(
-                        (stringify!($field).to_string(), <$type as $crate::shader::input::StaticUniformType>::TYPE),
+                        (
+                            stringify!($field).to_string(),
+                            <$type as $crate::shader::input::StaticUniformType>::TYPE
+                        ),
                     )*
                 ]
             }
@@ -340,41 +354,35 @@ macro_rules! impl_uniform_input_detail {
 }
 
 #[macro_export]
-macro_rules! plain_uniforms {
-    () => {
-        $crate::shader::input::MyEmptyUniforms
-    };
-    ($field:ident: $value:expr) => {
-        $crate::shader::input::MyUniformsStorage::new(stringify!($field), $value)
-    };
-    ($field1:ident: $value1:expr, $($field:ident: $value:expr),+) => {
-        {
-            let uniforms = $crate::shader::input::MyUniformsStorage::new(stringify!($field1), $value1);
-            $(
-                let uniforms = uniforms.add(stringify!($field), $value);
-            )+
-            uniforms
-        }
-    };
-    ($($field:ident: $value:expr),*,) => {
-        plain_uniforms!($($field: $value),*)
-    };
-}
-
-#[macro_export]
 macro_rules! impl_uniform_input {
-    ($ty:ident, $mod:ident, $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)? ) => {
+    (
+        $ty:ident,
+        $mod:ident,
+        $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
+    ) => {
         mod $mod {
-            $crate::impl_uniform_input_detail!($ty, $mod, $this => { $($field: $type => $value, )* });
+            $crate::impl_uniform_input_detail!(
+                $ty,
+                $mod,
+                $this => { $($field: $type => $value, )* }
+            );
         }
     }
 }
 
 #[macro_export]
 macro_rules! impl_instance_input {
-    ($ty:ident, $mod:ident, $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)? ) => {
+    (
+        $ty:ident,
+        $mod:ident,
+        $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
+    ) => {
         mod $mod {
-            $crate::impl_uniform_input_detail!($ty, $mod, $this => { $($field: $type => $value, )* });
+            $crate::impl_uniform_input_detail!(
+                $ty,
+                $mod,
+                $this => { $($field: $type => $value, )* }
+            );
 
             use glium::implement_vertex;
             implement_vertex!(MyUniforms, $($field,)*);

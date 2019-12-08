@@ -9,7 +9,7 @@ use log::info;
 
 use nalgebra as na;
 
-use glium::{uniform, Surface};
+use glium::Surface;
 
 use crate::pipeline::{RenderPassComponent, ScenePassComponent};
 use crate::shader::{self, ToUniforms};
