@@ -67,6 +67,61 @@ where
     }
 }
 
+impl<'u, U1, U2, U3> HasUniforms<'u> for (U1, U2, U3)
+where
+    U1: HasUniforms<'u>,
+    U2: HasUniforms<'u>,
+    U3: HasUniforms<'u>,
+{
+    type Uniforms =
+        UniformsPair<<U1 as HasUniforms<'u>>::Uniforms, <(U2, U3) as HasUniforms<'u>>::Uniforms>;
+}
+
+impl<U1, U2, U3> ToUniforms for (U1, U2, U3)
+where
+    U1: ToUniforms,
+    U2: ToUniforms,
+    U3: ToUniforms,
+{
+    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms {
+        UniformsPair(
+            self.0.to_uniforms(),
+            UniformsPair(self.1.to_uniforms(), self.2.to_uniforms()),
+        )
+    }
+}
+
+impl<'u, U1, U2, U3, U4> HasUniforms<'u> for (U1, U2, U3, U4)
+where
+    U1: HasUniforms<'u>,
+    U2: HasUniforms<'u>,
+    U3: HasUniforms<'u>,
+    U4: HasUniforms<'u>,
+{
+    type Uniforms = UniformsPair<
+        <U1 as HasUniforms<'u>>::Uniforms,
+        <(U2, U3, U4) as HasUniforms<'u>>::Uniforms,
+    >;
+}
+
+impl<U1, U2, U3, U4> ToUniforms for (U1, U2, U3, U4)
+where
+    U1: ToUniforms,
+    U2: ToUniforms,
+    U3: ToUniforms,
+    U4: ToUniforms,
+{
+    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms {
+        UniformsPair(
+            self.0.to_uniforms(),
+            UniformsPair(
+                self.1.to_uniforms(),
+                UniformsPair(self.2.to_uniforms(), self.3.to_uniforms()),
+            ),
+        )
+    }
+}
+
 impl<'u, U> HasUniforms<'u> for Option<U>
 where
     U: HasUniforms<'u>,
