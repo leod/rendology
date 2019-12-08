@@ -1,7 +1,7 @@
 //! This has become horrible.
 
 use glium::uniforms::{
-    AsUniformValue, EmptyUniforms, UniformType, UniformValue, Uniforms, UniformsStorage,
+    AsUniformValue, EmptyUniforms, Sampler, UniformType, UniformValue, Uniforms, UniformsStorage,
 };
 
 pub trait ToUniforms {
@@ -212,7 +212,14 @@ impl StaticUniformType for [[f32; 4]; 4] {
     const TYPE: UniformType = UniformType::FloatMat4;
 }
 
-/// Object that can be used when you don't have any uniforms.
+impl<'a> StaticUniformType for Sampler<'a, glium::texture::Texture2d> {
+    const TYPE: UniformType = UniformType::Sampler2d;
+}
+
+impl<'a> StaticUniformType for &'a glium::texture::Texture2d {
+    const TYPE: UniformType = UniformType::Sampler2d;
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct MyEmptyUniforms;
 
@@ -325,7 +332,7 @@ macro_rules! impl_uniform_input_detail {
             }
         }
 
-        impl $crate::shader::ToUniforms for super::$ty {
+        impl $crate::shader::ToUniforms for $ty {
             type Uniforms = MyUniforms;
 
             fn to_uniforms(&$this) -> MyUniforms {
@@ -337,7 +344,7 @@ macro_rules! impl_uniform_input_detail {
             }
         }
 
-        impl $crate::shader::UniformInput for super::$ty {
+        impl $crate::shader::UniformInput for $ty {
             fn uniform_input_defs() -> Vec<(String, glium::uniforms::UniformType)> {
                 vec![
                     $(
@@ -392,15 +399,68 @@ macro_rules! impl_instance_input {
                 }
             }
 
-            impl $crate::shader::InstanceInput for super::$ty {
+            impl $crate::shader::InstanceInput for $ty {
                 type Vertex = MyUniforms;
 
-                fn to_vertex(&$this) -> Self::Vertex {
-                    Self::Vertex {
+                fn to_vertex(&self) -> Self::Vertex {
+                    $crate::shader::ToUniforms::to_uniforms(self)
+                }
+            }
+
+            ()
+        };
+    }
+}
+
+#[macro_export]
+macro_rules! impl_uniform_input_with_lifetime {
+    (
+        $ty:ident<$life:lifetime>,
+        $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
+    ) => {
+        const _: () = {
+            #[derive(Copy, Clone, Debug)]
+            pub struct MyUniforms<$life> {
+                $(
+                    $field: $type,
+                )*
+            }
+
+            impl<'u> glium::uniforms::Uniforms for MyUniforms<'u> {
+                fn visit_values<'a, F>(&'a self, mut output: F)
+                where
+                    F: FnMut(&str, glium::uniforms::UniformValue<'a>),
+                {
+                    use glium::uniforms::AsUniformValue;
+
+                    $(
+                        output(stringify!($field), self.$field.as_uniform_value());
+                    )*
+                }
+            }
+
+            impl<'a, 'u: 'a> $crate::shader::ToUniforms for &'a $ty<'u> {
+                type Uniforms = MyUniforms<'u>;
+
+                fn to_uniforms(&$this) -> MyUniforms<'u> {
+                    MyUniforms {
                         $(
                             $field: $value,
                         )*
                     }
+                }
+            }
+
+            impl<'__life, $life: '__life> $crate::shader::UniformInput for &'__life $ty<$life> {
+                fn uniform_input_defs() -> Vec<(String, glium::uniforms::UniformType)> {
+                    vec![
+                        $(
+                            (
+                                stringify!($field).to_string(),
+                                <$type as $crate::shader::input::StaticUniformType>::TYPE
+                            ),
+                        )*
+                    ]
                 }
             }
 
