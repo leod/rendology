@@ -296,7 +296,15 @@ impl StaticUniformType for [[f32; 4]; 4] {
     const TYPE: UniformType = UniformType::FloatMat4;
 }
 
+impl<'a> StaticUniformType for &'a glium::texture::Texture2d {
+    const TYPE: UniformType = UniformType::Sampler2d;
+}
+
 impl<'a> StaticUniformType for Sampler<'a, glium::texture::Texture2d> {
+    const TYPE: UniformType = UniformType::Sampler2d;
+}
+
+impl<'a> StaticUniformType for &'a glium::texture::DepthTexture2d {
     const TYPE: UniformType = UniformType::Sampler2d;
 }
 
@@ -304,11 +312,11 @@ impl<'a> StaticUniformType for Sampler<'a, glium::texture::DepthTexture2d> {
     const TYPE: UniformType = UniformType::Sampler2d;
 }
 
-impl<'a> StaticUniformType for &'a glium::texture::Texture2d {
+impl<'a> StaticUniformType for &'a glium::texture::CompressedSrgbTexture2d {
     const TYPE: UniformType = UniformType::Sampler2d;
 }
 
-impl<'a> StaticUniformType for &'a glium::texture::DepthTexture2d {
+impl<'a> StaticUniformType for Sampler<'a, glium::texture::CompressedSrgbTexture2d> {
     const TYPE: UniformType = UniformType::Sampler2d;
 }
 
