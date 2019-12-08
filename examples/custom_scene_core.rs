@@ -16,9 +16,9 @@ mod my_scene {
     use rendology::{basic_obj, shader, Context, SceneCore};
 
     #[derive(Clone)]
-    pub struct Params /*<'a>*/ {
+    pub struct Params<'a> {
         pub time: f32,
-        //pub texture: &'a glium::Texture2d,
+        pub texture: &'a glium::texture::CompressedSrgbTexture2d,
     }
 
     #[derive(Clone)]
@@ -26,11 +26,11 @@ mod my_scene {
         pub transform: na::Matrix4<f32>,
     }
 
-    rendology::impl_uniform_input!(
-        Params/*<'a>*/,
+    rendology::impl_uniform_input_with_lifetime!(
+        Params<'a>,
         self => {
             time: f32 => self.time,
-            //texture: &'a glium::Texture2d => self.texture,
+            texture: &'a glium::texture::CompressedSrgbTexture2d => self.texture,
         },
     );
 
@@ -44,7 +44,7 @@ mod my_scene {
     pub struct Core;
 
     impl SceneCore for Core {
-        type Params = Params;
+        type Params = Params<'static>;
         type Instance = Instance;
         type Vertex = basic_obj::Vertex;
 
@@ -139,7 +139,7 @@ impl Pipeline {
             let image =
                 glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), dimensions);
 
-            glium::texture::CompressedSrgbTexture2d::new(&display, image).unwrap()
+            glium::texture::CompressedSrgbTexture2d::new(facade, image).unwrap()
         };
 
         Ok(Pipeline {
@@ -165,7 +165,10 @@ impl Pipeline {
             ..Default::default()
         };
 
-        let my_params = my_scene::Params { time: scene.time };
+        let my_params = my_scene::Params {
+            time: scene.time,
+            texture: &self.texture,
+        };
 
         self.rendology
             .start_frame(facade, context.clone(), target)?
@@ -196,7 +199,9 @@ impl Pipeline {
                 &Default::default(),
             )?
             .compose(&scene.lights)?
-            .present()
+            .present();
+
+        Ok(())
     }
 }
 
