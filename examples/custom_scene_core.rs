@@ -30,7 +30,7 @@ mod my_scene {
         Params<'a>,
         self => {
             time: f32 => self.time,
-            texture: &'a glium::texture::CompressedSrgbTexture2d => self.texture,
+            my_texture: &'a glium::texture::CompressedSrgbTexture2d => self.texture,
         },
     );
 
@@ -62,12 +62,14 @@ mod my_scene {
                     shader::defs::v_world_pos(),
                     &format!("mat_model * vec4({}, 1.0)", position),
                 )
+                .with_out(shader::defs::v_tex_coord(), "position.xy + 0.5")
                 .with_out_expr(
                     shader::defs::V_POSITION,
                     "mat_projection * mat_view * v_world_pos",
                 );
             let fragment = shader::FragmentCore::empty()
-                .with_out(shader::defs::f_color(), "vec4(1.0, 0.0, 0.0, 1.0)");
+                .with_in_def(shader::defs::v_tex_coord())
+                .with_out(shader::defs::f_color(), "texture(my_texture, v_tex_coord)");
 
             shader::Core { vertex, fragment }
         }
@@ -122,7 +124,7 @@ impl Pipeline {
             InstancingMode::Uniforms,
             ShadedScenePassSetup {
                 draw_shadowed: true,
-                draw_glowing: false,
+                draw_glowing: true,
             },
         )?;
 
@@ -217,7 +219,11 @@ fn main() {
     };
 
     // Initialize rendology pipeline
-    let mut pipeline = Pipeline::create(&display, &Default::default()).unwrap();
+    let config = rendology::Config {
+        hdr: Some(1.0),
+        ..Default::default()
+    };
+    let mut pipeline = Pipeline::create(&display, &config).unwrap();
 
     let start_time = Instant::now();
     let mut quit = false;
