@@ -18,6 +18,7 @@ use crate::shader::{InstancingMode, ToUniforms};
 use crate::{shader, Context, DrawError, Drawable, Light, ScreenQuad};
 
 use components::Components;
+use render_pass::CompositionPassComponent;
 
 pub use config::Config;
 pub use render_pass::{PlainScenePass, ShadedScenePass, ShadedScenePassSetup, ShadowPass};
@@ -360,13 +361,13 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
             let deferred_shading_uniforms = components
                 .deferred_shading
                 .as_ref()
-                .map(|c| c.composition_pass_uniforms());
+                .map(|c| CompositionPassComponent::params(c));
             let glow_uniforms = components
                 .glow
                 .as_ref()
-                .map(|c| c.composition_pass_uniforms());
+                .map(|c| CompositionPassComponent::params(c));
 
-            let uniforms = (&color_uniform, (&deferred_shading_uniforms, &glow_uniforms));
+            let uniforms = (&color_uniform, &deferred_shading_uniforms, &glow_uniforms);
 
             target_buffer.draw(
                 &pipeline.screen_quad.vertex_buffer,
