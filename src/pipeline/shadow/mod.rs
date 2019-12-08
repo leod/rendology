@@ -9,9 +9,11 @@ use log::info;
 
 use nalgebra as na;
 
+use glium::texture::DepthTexture2d;
+use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler};
 use glium::Surface;
 
-use crate::pipeline::{RenderPassComponent, ScenePassComponent};
+use crate::pipeline::render_pass::{HasParams, RenderPassComponent, ScenePassComponent};
 use crate::shader::{self, ToUniforms};
 use crate::{Camera, Context, DrawError, Drawable};
 
@@ -31,7 +33,7 @@ impl Default for Config {
 }
 
 pub struct ShadowMapping {
-    shadow_texture: glium::texture::DepthTexture2d,
+    shadow_texture: DepthTexture2d,
 }
 
 impl RenderPassComponent for ShadowMapping {
@@ -45,19 +47,22 @@ impl RenderPassComponent for ShadowMapping {
     }
 }
 
-/*struct ScenePassUniforms<'a> {
+pub struct ScenePassParams<'a> {
     mat_light_view_projection: na::Matrix4<f32>,
-    shadow_map: glium::uniforms::Sampler<'a, glium::texture::Texture2d>,
+    shadow_map: Sampler<'a, DepthTexture2d>,
 }
 
 impl_uniform_input_with_lifetime!(
-    ScenePassUniforms,
-    'a,
+    ScenePassParams<'a>,
     self => {
         mat_light_view_projection: [[f32; 4]; 4] => self.mat_light_view_projection.into(),
-        shadow_map: glium::uniforms::Sampler<'a, glium::texture::Texture2d> => self.shadow_map,
+        shadow_map: Sampler<'a, DepthTexture2d> => self.shadow_map,
     },
-);*/
+);
+
+impl<'u> HasParams<'u> for ShadowMapping {
+    type Params = ScenePassParams<'u>;
+}
 
 impl ScenePassComponent for ShadowMapping {
     /// Transforms a shader so that it shadows the scene.
@@ -70,6 +75,15 @@ impl ScenePassComponent for ShadowMapping {
     ) -> shader::Core<(Context, P), I, V> {
         shaders::render_shadowed_core_transform(core)
     }
+
+    fn params(&self, context: &Context) -> ScenePassParams {
+        ScenePassParams {
+            mat_light_view_projection: self.light_projection() * self.light_view(context),
+            shadow_map: Sampler::new(&self.shadow_texture)
+                .magnify_filter(MagnifySamplerFilter::Nearest)
+                .minify_filter(MinifySamplerFilter::Nearest),
+        }
+    }
 }
 
 impl ShadowMapping {
@@ -78,11 +92,8 @@ impl ShadowMapping {
         config: &Config,
     ) -> Result<ShadowMapping, CreationError> {
         info!("Creating shadow texture");
-        let shadow_texture = glium::texture::DepthTexture2d::empty(
-            facade,
-            config.shadow_map_size.x,
-            config.shadow_map_size.y,
-        )?;
+        let shadow_texture =
+            DepthTexture2d::empty(facade, config.shadow_map_size.x, config.shadow_map_size.y)?;
 
         info!("Shadow mapping initialized");
 
@@ -155,20 +166,5 @@ impl ShadowMapping {
             &draw_params,
             &mut shadow_target,
         )
-    }
-
-    /// Returns uniforms for binding the shadow map during scene pass.
-    pub fn scene_pass_uniforms(&self, context: &Context) -> impl ToUniforms + '_ {
-        let light_projection = self.light_projection();
-        let light_view = self.light_view(context);
-        let mat_light_view_projection: [[f32; 4]; 4] = (light_projection * light_view).into();
-        let shadow_map = glium::uniforms::Sampler::new(&self.shadow_texture)
-            .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
-            .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest);
-
-        plain_uniforms! {
-            mat_light_view_projection: mat_light_view_projection,
-            shadow_map: shadow_map,
-        }
     }
 }

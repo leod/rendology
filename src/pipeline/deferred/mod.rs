@@ -13,11 +13,13 @@ use glium::{uniform, Surface};
 
 use crate::shader::{self, InstanceInput, ToUniforms};
 use crate::{
-    basic_obj, screen_quad, BasicObj, Camera, Context, DrawError, Drawable, Instancing, Mesh,
-    ScreenQuad,
+    basic_obj, screen_quad, BasicObj, Camera, Context, DrawError, Drawable, Instancing, Light,
+    Mesh, ScreenQuad,
 };
 
-use crate::pipeline::{CompositionPassComponent, Light, RenderPassComponent, ScenePassComponent};
+use crate::pipeline::render_pass::{
+    CompositionPassComponent, HasParams, RenderPassComponent, ScenePassComponent,
+};
 
 pub use crate::CreationError;
 
@@ -56,6 +58,10 @@ impl RenderPassComponent for DeferredShading {
     }
 }
 
+impl<'u> HasParams<'u> for DeferredShading {
+    type Params = ();
+}
+
 impl ScenePassComponent for DeferredShading {
     fn core_transform<P, I, V>(
         &self,
@@ -76,6 +82,10 @@ impl ScenePassComponent for DeferredShading {
         }
 
         result
+    }
+
+    fn params(&self, _: &Context) -> () {
+        ()
     }
 }
 

@@ -12,7 +12,7 @@ use glsl::visitor::Host;
 use glium::uniforms::UniformType;
 use glium::vertex::AttributeType;
 
-pub use input::{InstanceInput, ToUniforms, UniformInput};
+pub use input::{HasUniforms, InstanceInput, ToUniforms, UniformInput};
 
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

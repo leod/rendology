@@ -1,6 +1,6 @@
 use crate::pipeline::Context;
 use crate::scene::SceneCore;
-use crate::shader::InstancingMode;
+use crate::shader::{InstancingMode, ToUniforms};
 use crate::{screen_quad, shader, DrawError};
 
 pub struct ShadowPass<C: SceneCore> {
@@ -45,7 +45,11 @@ pub trait RenderPassComponent {
     fn clear_buffers<F: glium::backend::Facade>(&self, facade: &F) -> Result<(), DrawError>;
 }
 
-pub trait ScenePassComponent {
+pub trait HasParams<'u> {
+    type Params: ToUniforms;
+}
+
+pub trait ScenePassComponent: for<'u> HasParams<'u> {
     fn core_transform<P, I, V>(
         &self,
         core: shader::Core<(Context, P), I, V>,
@@ -55,17 +59,7 @@ pub trait ScenePassComponent {
         Vec::new()
     }
 
-    // Ideally, we would define a method here which returns uniforms that
-    // need to be passed into the transformed shaders for the pass to work.
-    // Unfortunately, that is not easily possible, since glium's `uniform!`
-    // macro returns a long nested type. We could use "impl trait in trait"
-    // again (as in `ToUniforms`), but this is blocked by the fact that,
-    // for texture uniforms, the returned type borrows `self`, so it is
-    // actually a generic type!
-    //
-    // Thus, for now, the methods returning uniforms are defined in the
-    // individual passes separately.
-    //fn uniforms<'a>(&'a self) -> impl Uniforms<'a>;
+    fn params<'u>(&'u self, context: &Context) -> <Self as HasParams<'u>>::Params;
 }
 
 pub trait CompositionPassComponent {

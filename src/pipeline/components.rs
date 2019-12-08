@@ -188,9 +188,7 @@ impl Components {
     {
         let uniforms = (
             params,
-            self.shadow_mapping
-                .as_ref()
-                .map(|c| c.scene_pass_uniforms(params.0)),
+            self.shadow_mapping.as_ref().map(|c| c.params(params.0)),
         );
 
         drawable.draw(program, &uniforms, &draw_params, target)
@@ -221,14 +219,14 @@ impl Components {
         textures.extend(
             self.deferred_shading
                 .as_ref()
-                .map_or(Vec::new(), ScenePassComponent::output_textures),
+                .map_or(Vec::new(), |c| c.output_textures()),
         );
 
         if setup.draw_glowing {
             textures.extend(
                 self.glow
                     .as_ref()
-                    .map_or(Vec::new(), ScenePassComponent::output_textures),
+                    .map_or(Vec::new(), |c| c.output_textures()),
             );
         }
 
