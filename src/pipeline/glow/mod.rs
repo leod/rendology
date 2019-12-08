@@ -4,13 +4,13 @@ use log::info;
 
 use glium::framebuffer::SimpleFrameBuffer;
 use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler, SamplerWrapFunction};
-use glium::{uniform, Surface};
+use glium::{uniform, Program, Surface, Texture2d};
 
 use crate::pipeline::render_pass::{
-    CompositionPassComponent, HasParams, RenderPassComponent, ScenePassComponent,
+    CompositionPassComponent, HasCompositionPassParams, HasScenePassParams, RenderPassComponent,
+    ScenePassComponent,
 };
-use crate::shader::{self, ToUniforms};
-use crate::{screen_quad, Context, DrawError, ScreenQuad};
+use crate::{screen_quad, shader, Context, DrawError, ScreenQuad};
 
 pub use crate::CreationError;
 
@@ -27,9 +27,9 @@ impl Default for Config {
 
 pub struct Glow {
     config: Config,
-    glow_texture: glium::texture::Texture2d,
-    glow_texture_back: glium::texture::Texture2d,
-    blur_program: glium::Program,
+    glow_texture: Texture2d,
+    glow_texture_back: Texture2d,
+    blur_program: Program,
     screen_quad: ScreenQuad,
 }
 
@@ -43,7 +43,7 @@ impl RenderPassComponent for Glow {
     }
 }
 
-impl<'u> HasParams<'u> for Glow {
+impl<'u> HasScenePassParams<'u> for Glow {
     type Params = ();
 }
 
@@ -55,7 +55,7 @@ impl ScenePassComponent for Glow {
         shaders::glow_map_core_transform(core)
     }
 
-    fn output_textures(&self) -> Vec<(&'static str, &glium::texture::Texture2d)> {
+    fn output_textures(&self) -> Vec<(&'static str, &Texture2d)> {
         vec![("f_glow_color", &self.glow_texture)]
     }
 
@@ -64,12 +64,33 @@ impl ScenePassComponent for Glow {
     }
 }
 
+pub struct CompositionPassParams<'a> {
+    glow_texture: &'a Texture2d,
+}
+
+impl_uniform_input_with_lifetime!(
+    CompositionPassParams<'a>,
+    self => {
+        glow_texture: &'a Texture2d => self.glow_texture,
+    },
+);
+
+impl<'u> HasCompositionPassParams<'u> for Glow {
+    type Params = CompositionPassParams<'u>;
+}
+
 impl CompositionPassComponent for Glow {
     fn core_transform(
         &self,
         core: shader::Core<(), (), screen_quad::Vertex>,
     ) -> shader::Core<(), (), screen_quad::Vertex> {
         shaders::composition_core_transform(core)
+    }
+
+    fn params(&self) -> CompositionPassParams {
+        CompositionPassParams {
+            glow_texture: &self.glow_texture,
+        }
     }
 }
 
@@ -149,17 +170,11 @@ impl Glow {
         Ok(())
     }
 
-    pub fn composition_pass_uniforms(&self) -> impl ToUniforms + '_ {
-        plain_uniforms! {
-            glow_texture: &self.glow_texture,
-        }
-    }
-
     fn create_texture<F: glium::backend::Facade>(
         facade: &F,
         size: (u32, u32),
-    ) -> Result<glium::texture::Texture2d, CreationError> {
-        Ok(glium::texture::Texture2d::empty_with_format(
+    ) -> Result<Texture2d, CreationError> {
+        Ok(Texture2d::empty_with_format(
             facade,
             glium::texture::UncompressedFloatFormat::F32F32F32F32,
             glium::texture::MipmapsOption::NoMipmap,

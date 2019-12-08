@@ -188,9 +188,15 @@ impl Components {
     {
         let uniforms = (
             params,
-            self.shadow_mapping.as_ref().map(|c| c.params(params.0)),
-            self.deferred_shading.as_ref().map(|c| c.params(params.0)),
-            self.glow.as_ref().map(|c| c.params(params.0)),
+            self.shadow_mapping
+                .as_ref()
+                .map(|c| ScenePassComponent::params(c, params.0)),
+            self.deferred_shading
+                .as_ref()
+                .map(|c| ScenePassComponent::params(c, params.0)),
+            self.glow
+                .as_ref()
+                .map(|c| ScenePassComponent::params(c, params.0)),
         );
 
         drawable.draw(program, &uniforms, &draw_params, target)

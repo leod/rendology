@@ -9,7 +9,7 @@ use log::info;
 
 use nalgebra as na;
 
-use glium::{uniform, Surface};
+use glium::{uniform, Surface, Texture2d};
 
 use crate::shader::{self, InstanceInput, ToUniforms};
 use crate::{
@@ -18,7 +18,8 @@ use crate::{
 };
 
 use crate::pipeline::render_pass::{
-    CompositionPassComponent, HasParams, RenderPassComponent, ScenePassComponent,
+    CompositionPassComponent, HasCompositionPassParams, HasScenePassParams, RenderPassComponent,
+    ScenePassComponent,
 };
 
 pub use crate::CreationError;
@@ -31,10 +32,10 @@ const LIGHT_MIN_THRESHOLD: f32 = 0.02;
 const NUM_TEXTURES: usize = 2;
 
 pub struct DeferredShading {
-    scene_textures: [glium::texture::Texture2d; NUM_TEXTURES],
-    shadow_texture: Option<glium::texture::Texture2d>,
+    scene_textures: [Texture2d; NUM_TEXTURES],
+    shadow_texture: Option<Texture2d>,
 
-    light_texture: glium::texture::Texture2d,
+    light_texture: Texture2d,
 
     main_light_screen_quad_program: glium::Program,
     light_object_program: glium::Program,
@@ -58,7 +59,7 @@ impl RenderPassComponent for DeferredShading {
     }
 }
 
-impl<'u> HasParams<'u> for DeferredShading {
+impl<'u> HasScenePassParams<'u> for DeferredShading {
     type Params = ();
 }
 
@@ -71,7 +72,7 @@ impl ScenePassComponent for DeferredShading {
         shaders::scene_buffers_core_transform(self.shadow_texture.is_some(), core)
     }
 
-    fn output_textures(&self) -> Vec<(&'static str, &glium::texture::Texture2d)> {
+    fn output_textures(&self) -> Vec<(&'static str, &Texture2d)> {
         let mut result = vec![
             ("f_world_pos", &self.scene_textures[0]),
             ("f_world_normal", &self.scene_textures[1]),
@@ -89,12 +90,33 @@ impl ScenePassComponent for DeferredShading {
     }
 }
 
+pub struct CompositionPassParams<'a> {
+    light_texture: &'a Texture2d,
+}
+
+impl_uniform_input_with_lifetime!(
+    CompositionPassParams<'a>,
+    self => {
+        light_texture: &'a Texture2d => self.light_texture,
+    },
+);
+
+impl<'u> HasCompositionPassParams<'u> for DeferredShading {
+    type Params = CompositionPassParams<'u>;
+}
+
 impl CompositionPassComponent for DeferredShading {
     fn core_transform(
         &self,
         core: shader::Core<(), (), screen_quad::Vertex>,
     ) -> shader::Core<(), (), screen_quad::Vertex> {
         shaders::composition_core_transform(core)
+    }
+
+    fn params(&self) -> CompositionPassParams {
+        CompositionPassParams {
+            light_texture: &self.light_texture,
+        }
     }
 }
 
@@ -281,17 +303,11 @@ impl DeferredShading {
         Ok(())
     }
 
-    pub fn composition_pass_uniforms(&self) -> impl ToUniforms + '_ {
-        plain_uniforms! {
-            light_texture: &self.light_texture,
-        }
-    }
-
     fn create_texture<F: glium::backend::Facade>(
         facade: &F,
         size: (u32, u32),
-    ) -> Result<glium::texture::Texture2d, CreationError> {
-        Ok(glium::texture::Texture2d::empty_with_format(
+    ) -> Result<Texture2d, CreationError> {
+        Ok(Texture2d::empty_with_format(
             facade,
             glium::texture::UncompressedFloatFormat::F32F32F32F32,
             glium::texture::MipmapsOption::NoMipmap,
@@ -303,8 +319,8 @@ impl DeferredShading {
     fn create_shadow_texture<F: glium::backend::Facade>(
         facade: &F,
         size: (u32, u32),
-    ) -> Result<glium::texture::Texture2d, CreationError> {
-        Ok(glium::texture::Texture2d::empty_with_format(
+    ) -> Result<Texture2d, CreationError> {
+        Ok(Texture2d::empty_with_format(
             facade,
             glium::texture::UncompressedFloatFormat::F32,
             glium::texture::MipmapsOption::NoMipmap,

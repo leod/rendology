@@ -45,11 +45,11 @@ pub trait RenderPassComponent {
     fn clear_buffers<F: glium::backend::Facade>(&self, facade: &F) -> Result<(), DrawError>;
 }
 
-pub trait HasParams<'u> {
+pub trait HasScenePassParams<'u> {
     type Params: ToUniforms;
 }
 
-pub trait ScenePassComponent: for<'u> HasParams<'u> {
+pub trait ScenePassComponent: RenderPassComponent + for<'u> HasScenePassParams<'u> {
     fn core_transform<P, I, V>(
         &self,
         core: shader::Core<(Context, P), I, V>,
@@ -59,16 +59,20 @@ pub trait ScenePassComponent: for<'u> HasParams<'u> {
         Vec::new()
     }
 
-    fn params<'u>(&'u self, context: &Context) -> <Self as HasParams<'u>>::Params;
+    fn params<'u>(&'u self, context: &Context) -> <Self as HasScenePassParams<'u>>::Params;
 }
 
-pub trait CompositionPassComponent {
+pub trait HasCompositionPassParams<'u> {
+    type Params: ToUniforms;
+}
+
+pub trait CompositionPassComponent:
+    RenderPassComponent + for<'u> HasCompositionPassParams<'u>
+{
     fn core_transform(
         &self,
         core: shader::Core<(), (), screen_quad::Vertex>,
     ) -> shader::Core<(), (), screen_quad::Vertex>;
 
-    // Due to the same reason as described in `ScenePassComponent`, the uniforms
-    // are returned in pass-specific methods.
-    //fn uniforms<'a>(&'a self) -> impl Uniforms<'a>;
+    fn params<'u>(&'u self) -> <Self as HasCompositionPassParams<'u>>::Params;
 }

@@ -13,7 +13,7 @@ use glium::texture::DepthTexture2d;
 use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler};
 use glium::Surface;
 
-use crate::pipeline::render_pass::{HasParams, RenderPassComponent, ScenePassComponent};
+use crate::pipeline::render_pass::{HasScenePassParams, RenderPassComponent, ScenePassComponent};
 use crate::shader::{self, ToUniforms};
 use crate::{Camera, Context, DrawError, Drawable};
 
@@ -60,7 +60,7 @@ impl_uniform_input_with_lifetime!(
     },
 );
 
-impl<'u> HasParams<'u> for ShadowMapping {
+impl<'u> HasScenePassParams<'u> for ShadowMapping {
     type Params = ScenePassParams<'u>;
 }
 
@@ -68,7 +68,7 @@ impl ScenePassComponent for ShadowMapping {
     /// Transforms a shader so that it shadows the scene.
     ///
     /// Note that the transformed shader will require additional uniforms,
-    /// which are given by `ShadowMapping::scene_pass_uniforms`.
+    /// which are given by `params`.
     fn core_transform<P, I, V>(
         &self,
         core: shader::Core<(Context, P), I, V>,
