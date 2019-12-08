@@ -127,6 +127,7 @@ impl ShadowMapping {
         drawable: &impl Drawable<I, V>,
         program: &glium::Program,
         params: (&Context, P),
+        draw_params: &glium::DrawParameters,
     ) -> Result<(), DrawError>
     where
         F: glium::backend::Facade,
@@ -151,13 +152,12 @@ impl ShadowMapping {
         };
 
         let draw_params = glium::DrawParameters {
-            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
             depth: glium::Depth {
                 test: glium::DepthTest::IfLessOrEqual,
                 write: true,
                 ..Default::default()
             },
-            ..Default::default()
+            ..draw_params.clone()
         };
 
         drawable.draw(

@@ -254,6 +254,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadowPassStep<'a, F, S> {
         pass: &Option<ShadowPass<C>>,
         drawable: &D,
         params: &C::Params,
+        draw_params: &glium::DrawParameters,
     ) -> Result<Self, DrawError>
     where
         C: SceneCore,
@@ -270,6 +271,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadowPassStep<'a, F, S> {
                 drawable,
                 &pass.program,
                 (&self.0.context, params),
+                draw_params,
             )?;
         }
 

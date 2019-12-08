@@ -5,8 +5,8 @@ use glium::{glutin, Surface};
 use nalgebra as na;
 
 use rendology::{
-    basic_obj, BasicObj, InstancingMode, Light, Mesh, RenderList,
-    ShadedScenePass, ShadedScenePassSetup, ShadowPass,
+    basic_obj, BasicObj, InstancingMode, Light, Mesh, RenderList, ShadedScenePass,
+    ShadedScenePassSetup, ShadowPass,
 };
 
 const WINDOW_SIZE: (u32, u32) = (1280, 720);
@@ -51,6 +51,8 @@ mod my_scene {
         fn scene_core(
             &self,
         ) -> shader::Core<(Context, Self::Params), Self::Instance, Self::Vertex> {
+            let position = "position + 0.2 * sin(time) * sin(time) * normal";
+
             let vertex = shader::VertexCore::empty()
                 .with_out(
                     shader::defs::v_world_normal(),
@@ -58,7 +60,7 @@ mod my_scene {
                 )
                 .with_out(
                     shader::defs::v_world_pos(),
-                    "mat_model * vec4(position + 0.2 * sin(time) * sin(time) * normal, 1.0)",
+                    &format!("mat_model * vec4({}, 1.0)", position),
                 )
                 .with_out_expr(
                     shader::defs::V_POSITION,
@@ -152,11 +154,17 @@ impl Pipeline {
         self.rendology
             .start_frame(facade, context.clone(), target)?
             .shadow_pass()
-            .draw(&self.shadow_pass, &scene.cubes.as_drawable(&self.cube), &())?
+            .draw(
+                &self.shadow_pass,
+                &scene.cubes.as_drawable(&self.cube),
+                &(),
+                &draw_params,
+            )?
             .draw(
                 &self.my_shadow_pass,
                 &scene.my_cubes.as_drawable(&self.cube),
                 &my_params,
+                &Default::default(),
             )?
             .shaded_scene_pass()
             .draw(
@@ -169,7 +177,7 @@ impl Pipeline {
                 &self.my_scene_pass,
                 &scene.my_cubes.as_drawable(&self.cube),
                 &my_params,
-                &draw_params,
+                &Default::default(),
             )?
             .compose(&scene.lights)?
             .present()
