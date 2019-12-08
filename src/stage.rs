@@ -11,7 +11,6 @@ pub struct Context {
 
 impl_uniform_input!(
     Context,
-    context,
     self => {
         viewport: [f32; 4] => self.camera.viewport.into(),
         mat_projection: [[f32; 4]; 4] => self.camera.projection.into(),
@@ -31,7 +30,6 @@ pub struct Light {
 
 impl_instance_input!(
     Light,
-    light,
     self => {
         light_position: [f32; 3] => self.position.coords.into(),
         light_attenuation: [f32; 3] => self.attenuation.into(),

@@ -9,7 +9,6 @@ pub struct Camera {
 
 impl_uniform_input!(
     Camera,
-    camera,
     self => {
         viewport: [f32; 4] => self.viewport.into(),
         mat_projection: [[f32; 4]; 4] => self.projection.into(),
