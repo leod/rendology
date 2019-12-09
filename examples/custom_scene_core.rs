@@ -320,33 +320,32 @@ fn scene(time: f32) -> Scene {
 
     scene.cubes.add(basic_obj::Instance {
         transform: na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(10.0, 10.0, 0.1)),
-        color: na::Vector4::new(0.8, 0.8, 0.8, 1.0),
+        color: na::Vector4::new(0.9, 0.9, 0.9, 1.0),
     });
 
-    for i in 0..7 {
-        let off = i as f32 * std::f32::consts::PI * 2.0 / 7.0;
+    let n = 10;
+    for i in 0..n {
+        let off = i as f32 * std::f32::consts::PI * 2.0 / n as f32;
         let orbit_transform = na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 4.0))
             * na::Matrix4::from_euler_angles(time + off, off, time / 2.0)
             * na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 3.0))
-            * na::Matrix4::new_scaling(0.75);
+            * na::Matrix4::new_scaling(0.5);
 
-        let color = if i % 2 == 0 && i % 3 == 0 {
+        let color = if i % 2 == 0 {
             na::Vector4::new(0.5, 0.1, 0.1, 1.0)
-        } else if i % 2 == 0 {
-            na::Vector4::new(0.1, 0.5, 0.1, 1.0)
         } else {
-            na::Vector4::new(0.1, 0.1, 0.5, 1.0)
+            na::Vector4::new(0.1, 0.5, 0.1, 1.0)
         };
 
         scene.glowing_cubes.add(basic_obj::Instance {
             transform: orbit_transform,
-            color,
+            color: color / 2.0,
         });
 
         scene.lights.push(Light {
             position: orbit_transform.transform_point(&na::Point3::origin()),
-            attenuation: na::Vector3::new(1.0, 0.7, 4.0),
-            color: na::Vector3::new(color.x, color.y, color.z),
+            attenuation: na::Vector3::new(1.0, 6.0, 30.0),
+            color: 40.0 * na::Vector3::new(color.x, color.y, color.z),
             is_main: false,
             ..Default::default()
         });
@@ -357,13 +356,13 @@ fn scene(time: f32) -> Scene {
             * na::Matrix4::from_euler_angles(time, time, time),
     });
 
-    /*scene.lights.push(Light {
+    scene.lights.push(Light {
         position: na::Point3::new(1.0, 1.0, 10.0),
         attenuation: na::Vector3::new(1.0, 0.0, 0.0),
-        color: na::Vector3::new(1.0, 1.0, 1.0),
+        color: na::Vector3::new(0.02, 0.02, 0.02),
         is_main: true,
         ..Default::default()
-    });*/
+    });
 
     scene
 }
