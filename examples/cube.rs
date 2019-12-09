@@ -183,5 +183,6 @@ fn render_context(target_size: (u32, u32)) -> rendology::Context {
         camera,
         main_light_pos: na::Point3::new(10.0, 10.0, 10.0),
         main_light_center: na::Point3::new(0.0, 0.0, 0.0),
+        ambient_light: na::Vector3::new(0.3, 0.3, 0.3),
     }
 }
