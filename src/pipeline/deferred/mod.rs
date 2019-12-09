@@ -85,9 +85,7 @@ impl ScenePassComponent for DeferredShading {
         result
     }
 
-    fn params(&self, _: &Context) -> () {
-        ()
-    }
+    fn params(&self, _: &Context) {}
 }
 
 pub struct CompositionPassParams<'a> {

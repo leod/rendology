@@ -59,9 +59,7 @@ impl ScenePassComponent for Glow {
         vec![("f_glow_color", &self.glow_texture)]
     }
 
-    fn params(&self, _: &Context) -> () {
-        ()
-    }
+    fn params(&self, _: &Context) {}
 }
 
 pub struct CompositionPassParams<'a> {
