@@ -239,8 +239,12 @@ fn main() {
     };
 
     // Initialize rendology pipeline
+    let deferred_config = rendology::pipeline::deferred::Config {
+        light_min_threshold: 0.0001,
+    };
     let mut pipeline_config = rendology::Config {
         hdr: Some(1.0),
+        deferred_shading: Some(deferred_config.clone()),
         ..Default::default()
     };
     let mut pipeline = Pipeline::create(&display, &pipeline_config).unwrap();
@@ -271,7 +275,7 @@ fn main() {
                                 pipeline_config.deferred_shading = pipeline_config
                                     .deferred_shading
                                     .clone()
-                                    .map_or(Some(Default::default()), |_| None);
+                                    .map_or(Some(deferred_config.clone()), |_| None);
                                 recreate_pipeline = true;
                             }
                             Some(VirtualKeyCode::F3) => {
@@ -385,5 +389,6 @@ fn render_context(target_size: (u32, u32)) -> rendology::Context {
         camera,
         main_light_pos: na::Point3::new(1.0, 1.0, 10.0),
         main_light_center: na::Point3::new(0.0, 0.0, 0.0),
+        ambient_light: na::Vector3::new(0.01, 0.01, 0.01),
     }
 }

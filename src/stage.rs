@@ -7,6 +7,7 @@ pub struct Context {
     pub camera: Camera,
     pub main_light_pos: na::Point3<f32>,
     pub main_light_center: na::Point3<f32>,
+    pub ambient_light: na::Vector3<f32>,
 }
 
 impl_uniform_input!(
@@ -16,6 +17,7 @@ impl_uniform_input!(
         context_camera_projection: [[f32; 4]; 4] = self.camera.projection,
         context_camera_view: [[f32; 4]; 4] = self.camera.view,
         context_main_light_pos: [f32; 3] = self.main_light_pos.coords,
+        context_ambient_light: [f32; 3] = self.ambient_light,
     },
 );
 

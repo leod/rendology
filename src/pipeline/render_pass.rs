@@ -71,8 +71,8 @@ pub trait CompositionPassComponent:
 {
     fn core_transform(
         &self,
-        core: shader::Core<(), (), screen_quad::Vertex>,
-    ) -> shader::Core<(), (), screen_quad::Vertex>;
+        core: shader::Core<Context, (), screen_quad::Vertex>,
+    ) -> shader::Core<Context, (), screen_quad::Vertex>;
 
     fn params(&self) -> <Self as HasCompositionPassParams<'_>>::Params;
 }
