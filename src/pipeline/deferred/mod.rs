@@ -24,14 +24,24 @@ use crate::pipeline::render_pass::{
 
 pub use crate::CreationError;
 
-#[derive(Debug, Clone, Default)]
-pub struct Config;
+#[derive(Debug, Clone)]
+pub struct Config {
+    pub light_min_threshold: f32,
+}
 
-const LIGHT_MIN_THRESHOLD: f32 = 0.0001;
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            light_min_threshold: 0.02,
+        }
+    }
+}
 
 const NUM_TEXTURES: usize = 2;
 
 pub struct DeferredShading {
+    config: Config,
+
     scene_textures: [Texture2d; NUM_TEXTURES],
     shadow_texture: Option<Texture2d>,
 
@@ -121,7 +131,7 @@ impl CompositionPassComponent for DeferredShading {
 impl DeferredShading {
     pub fn create<F: glium::backend::Facade>(
         facade: &F,
-        _config: &Config,
+        config: &Config,
         have_shadows: bool,
         target_size: (u32, u32),
     ) -> Result<DeferredShading, CreationError> {
@@ -157,6 +167,7 @@ impl DeferredShading {
         info!("Deferred shading initialized");
 
         Ok(DeferredShading {
+            config: config.clone(),
             scene_textures,
             shadow_texture,
             light_texture,
@@ -242,7 +253,7 @@ impl DeferredShading {
             let radicand = light.attenuation.y.powi(2)
                 - 4.0
                     * light.attenuation.z
-                    * (light.attenuation.x - i_max * 1.0 / LIGHT_MIN_THRESHOLD);
+                    * (light.attenuation.x - i_max * 1.0 / self.config.light_min_threshold);
             let radius = (-light.attenuation.y + radicand.sqrt()) / (2.0 * light.attenuation.z);
 
             let light = Light {
