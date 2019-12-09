@@ -265,7 +265,7 @@ impl DeferredShading {
                 let no_camera = Camera {
                     view: na::Matrix4::identity(),
                     projection: na::Matrix4::identity(),
-                    viewport: camera.viewport,
+                    viewport_size: camera.viewport_size,
                 };
 
                 let uniforms = (&textures, (no_camera, &light));

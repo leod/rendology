@@ -1,10 +1,19 @@
+use crate::shader;
+
 #[derive(Debug)]
 pub enum CreationError {
+    ShaderBuild(shader::BuildError),
     Texture(glium::texture::TextureCreationError),
     Program(glium::program::ProgramCreationError),
     VertexBuffer(glium::vertex::BufferCreationError),
     IndexBuffer(glium::index::BufferCreationError),
     IO(std::io::Error),
+}
+
+impl From<shader::BuildError> for CreationError {
+    fn from(err: shader::BuildError) -> CreationError {
+        CreationError::ShaderBuild(err)
+    }
 }
 
 impl From<glium::texture::TextureCreationError> for CreationError {

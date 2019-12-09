@@ -37,7 +37,7 @@ mod my_scene {
     rendology::impl_instance_input!(
         Instance,
         self => {
-            mat_model: [[f32; 4]; 4] => self.transform,
+            instance_transform: [[f32; 4]; 4] => self.transform,
         },
     );
 
@@ -56,16 +56,16 @@ mod my_scene {
             let vertex = shader::VertexCore::empty()
                 .with_out(
                     shader::defs::v_world_normal(),
-                    "normalize(transpose(inverse(mat3(mat_model))) * normal)",
+                    "normalize(transpose(inverse(mat3(instance_transform))) * normal)",
                 )
                 .with_out(
                     shader::defs::v_world_pos(),
-                    &format!("mat_model * vec4({}, 1.0)", position),
+                    &format!("instance_transform * vec4({}, 1.0)", position),
                 )
                 .with_out(shader::defs::v_tex_coord(), "position.xy + 0.5")
                 .with_out_expr(
                     shader::defs::V_POSITION,
-                    "mat_projection * mat_view * v_world_pos",
+                    "context_camera_projection * context_camera_view * v_world_pos",
                 );
             let fragment = shader::FragmentCore::empty()
                 .with_in_def(shader::defs::v_tex_coord())
@@ -292,7 +292,7 @@ fn render_context(target_size: (u32, u32)) -> rendology::Context {
             1000.0,
         )
         .to_homogeneous(),
-        viewport: na::Vector4::new(0.0, 0.0, target_size.0 as f32, target_size.1 as f32),
+        viewport_size: na::Vector2::new(target_size.0 as f32, target_size.1 as f32),
     };
 
     rendology::Context {
