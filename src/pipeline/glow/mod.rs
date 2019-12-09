@@ -68,7 +68,7 @@ pub struct CompositionPassParams<'a> {
     glow_texture: &'a Texture2d,
 }
 
-impl_uniform_input_with_lifetime!(
+impl_uniform_input!(
     CompositionPassParams<'a>,
     self => {
         glow_texture: &'a Texture2d = self.glow_texture,

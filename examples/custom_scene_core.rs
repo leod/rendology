@@ -26,7 +26,7 @@ mod my_scene {
         pub transform: na::Matrix4<f32>,
     }
 
-    rendology::impl_uniform_input_with_lifetime!(
+    rendology::impl_uniform_input!(
         Params<'a>,
         self => {
             time: f32 = self.time,
