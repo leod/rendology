@@ -16,7 +16,7 @@ pub use crate::CreationError;
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    num_blur_passes: usize,
+    pub num_blur_passes: usize,
 }
 
 impl Default for Config {
