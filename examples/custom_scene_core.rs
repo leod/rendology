@@ -37,7 +37,7 @@ mod my_scene {
     rendology::impl_instance_input!(
         Instance,
         self => {
-            mat_model: [[f32; 4]; 4] => self.transform.into(),
+            mat_model: [[f32; 4]; 4] => self.transform,
         },
     );
 

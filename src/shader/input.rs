@@ -458,7 +458,7 @@ macro_rules! impl_uniform_input_detail {
             fn to_uniforms(&$this) -> MyUniforms {
                 MyUniforms {
                     $(
-                        $field: $value,
+                        $field: $value.into(),
                     )*
                 }
             }
