@@ -107,7 +107,7 @@ fn light_fragment_core() -> shader::FragmentCore<Camera> {
         .with_in_def(v_light_attenuation())
         .with_body(
             "
-            vec2 tex_coord = gl_FragCoord.xy / viewport.zw;
+            vec2 tex_coord = gl_FragCoord.xy / camera_viewport_size;
             vec3 position = texture(position_texture, tex_coord).xyz;
             vec3 normal = texture(normal_texture, tex_coord).xyz;
 
@@ -164,8 +164,8 @@ pub fn light_object_core() -> shader::Core<Camera, Light, basic_obj::Vertex> {
         .with_out_expr(
             shader::defs::V_POSITION,
             "
-                mat_projection
-                * mat_view
+                camera_projection
+                * camera_view
                 * (vec4(position * light_radius, 1.0) + vec4(light_position, 0))
             ",
         );

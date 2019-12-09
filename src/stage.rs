@@ -12,10 +12,10 @@ pub struct Context {
 impl_uniform_input!(
     Context,
     self => {
-        viewport: [f32; 4] => self.camera.viewport,
-        mat_projection: [[f32; 4]; 4] => self.camera.projection,
-        mat_view: [[f32; 4]; 4] => self.camera.view,
-        main_light_pos: [f32; 3] => self.main_light_pos.coords,
+        context_camera_viewport_size: [f32; 2] => self.camera.viewport_size,
+        context_camera_projection: [[f32; 4]; 4] => self.camera.projection,
+        context_camera_view: [[f32; 4]; 4] => self.camera.view,
+        context_main_light_pos: [f32; 3] => self.main_light_pos.coords,
     },
 );
 

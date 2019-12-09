@@ -48,14 +48,14 @@ impl RenderPassComponent for ShadowMapping {
 }
 
 pub struct ScenePassParams<'a> {
-    mat_light_view_projection: na::Matrix4<f32>,
+    light_projection_view: na::Matrix4<f32>,
     shadow_map: Sampler<'a, DepthTexture2d>,
 }
 
 impl_uniform_input_with_lifetime!(
     ScenePassParams<'a>,
     self => {
-        mat_light_view_projection: [[f32; 4]; 4] => self.mat_light_view_projection.into(),
+        shadow_light_projection_view: [[f32; 4]; 4] => self.light_projection_view.into(),
         shadow_map: Sampler<'a, DepthTexture2d> => self.shadow_map,
     },
 );
@@ -78,7 +78,7 @@ impl ScenePassComponent for ShadowMapping {
 
     fn params(&self, context: &Context) -> ScenePassParams {
         ScenePassParams {
-            mat_light_view_projection: self.light_projection() * self.light_view(context),
+            light_projection_view: self.light_projection() * self.light_view(context),
             shadow_map: Sampler::new(&self.shadow_texture)
                 .magnify_filter(MagnifySamplerFilter::Nearest)
                 .minify_filter(MinifySamplerFilter::Nearest),
@@ -141,7 +141,7 @@ impl ShadowMapping {
         let light_view = self.light_view(params.0);
 
         let camera = Camera {
-            viewport: params.0.camera.viewport,
+            viewport_size: params.0.camera.viewport_size,
             projection: light_projection,
             view: light_view,
         };

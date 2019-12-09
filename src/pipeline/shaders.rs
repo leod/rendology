@@ -1,8 +1,10 @@
 use glium::uniforms::UniformType;
 
-use crate::{screen_quad, shader};
+use crate::{screen_quad, shader, Context};
 
-pub fn diffuse_scene_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader::Core<P, I, V> {
+pub fn diffuse_scene_core_transform<P, I, V>(
+    core: shader::Core<(Context, P), I, V>,
+) -> shader::Core<(Context, P), I, V> {
     let color_expr = if core.fragment.has_out(shader::defs::F_SHADOW) {
         "vec4((0.3 + f_shadow * diffuse) * f_color.rgb, f_color.a)"
     } else {
@@ -19,7 +21,7 @@ pub fn diffuse_scene_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> sha
             float diffuse = max(
                 dot(
                     normalize(v_world_normal),
-                    normalize(main_light_pos - v_world_pos.xyz)
+                    normalize(context_main_light_pos - v_world_pos.xyz)
                 ),
                 0.05
             );
