@@ -5,6 +5,8 @@
 - Add textured cube example ([#3](https://github.com/leod/rendology/pull/3))
 - Fix bug where glow output texture was not set ([#3](https://github.com/leod/rendology/pull/3))
 - `impl_instance_input` and `impl_uniform_input` now take the actual rust types ([#3](https://github.com/leod/rendology/pull/3))
+- Reworked macro syntax ([#4](https://github.com/leod/rendology/pull/4))
+- More explicit names for built-in uniforms ([#4](https://github.com/leod/rendology/pull/4))
 
 ## Version 0.2.0 (2019-12-06)
 - Replace `ToVertex` trait by `InstanceInput`
