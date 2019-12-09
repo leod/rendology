@@ -173,24 +173,31 @@ impl Components {
         Ok(())
     }
 
-    pub fn scene_pass<C, D, S>(
+    pub fn scene_pass<C, D, P, S>(
         &self,
         drawable: &D,
         program: &glium::Program,
-        params: (&Context, &C::Params),
+        params: (&Context, &P),
         draw_params: &glium::DrawParameters,
         target: &mut S,
     ) -> Result<(), DrawError>
     where
         C: SceneCore,
         D: Drawable<C::Instance, C::Vertex>,
+        P: shader::input::CompatibleWith<C::Params>,
         S: glium::Surface,
     {
         let uniforms = (
             params,
             self.shadow_mapping
                 .as_ref()
-                .map(|c| c.scene_pass_uniforms(params.0)),
+                .map(|c| ScenePassComponent::params(c, params.0)),
+            self.deferred_shading
+                .as_ref()
+                .map(|c| ScenePassComponent::params(c, params.0)),
+            self.glow
+                .as_ref()
+                .map(|c| ScenePassComponent::params(c, params.0)),
         );
 
         drawable.draw(program, &uniforms, &draw_params, target)
@@ -214,23 +221,21 @@ impl Components {
 
     pub fn shaded_scene_pass_output_textures(
         &self,
-        setup: &ShadedScenePassSetup,
+        _setup: &ShadedScenePassSetup,
     ) -> Vec<(&'static str, &glium::texture::Texture2d)> {
         let mut textures = Vec::new();
 
         textures.extend(
             self.deferred_shading
                 .as_ref()
-                .map_or(Vec::new(), ScenePassComponent::output_textures),
+                .map_or(Vec::new(), |c| c.output_textures()),
         );
 
-        if setup.draw_glowing {
-            textures.extend(
-                self.glow
-                    .as_ref()
-                    .map_or(Vec::new(), ScenePassComponent::output_textures),
-            );
-        }
+        textures.extend(
+            self.glow
+                .as_ref()
+                .map_or(Vec::new(), |c| c.output_textures()),
+        );
 
         textures
     }

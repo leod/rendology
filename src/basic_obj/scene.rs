@@ -21,8 +21,8 @@ impl Default for Instance {
 impl_instance_input!(
     Instance,
     self => {
-        mat_model: Mat4 => self.transform.into(),
-        color: Vec4 => self.color.into(),
+        mat_model: [[f32; 4]; 4] => self.transform.into(),
+        color: [f32; 4] => self.color.into(),
     },
 );
 
@@ -50,7 +50,7 @@ impl SceneCore for Core {
                 "mat_projection * mat_view * v_world_pos",
             );
 
-        let fragment = shader::FragmentCore::default()
+        let fragment = shader::FragmentCore::empty()
             .with_in_def(shader::defs::v_color())
             .with_out(shader::defs::f_color(), "v_color");
 
