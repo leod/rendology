@@ -1,8 +1,10 @@
 use std::time::Instant;
 
 use floating_duration::TimeAsFloat;
-use glium::{glutin, Surface};
 use nalgebra as na;
+
+use glium::glutin::{self, ElementState, VirtualKeyCode, WindowEvent};
+use glium::Surface;
 
 use rendology::{
     basic_obj, BasicObj, InstancingMode, Light, Mesh, RenderList, ShadedScenePass,
@@ -219,24 +221,59 @@ fn main() {
     };
 
     // Initialize rendology pipeline
-    let config = rendology::Config {
+    let mut pipeline_config = rendology::Config {
         hdr: Some(1.0),
         ..Default::default()
     };
-    let mut pipeline = Pipeline::create(&display, &config).unwrap();
+    let mut pipeline = Pipeline::create(&display, &pipeline_config).unwrap();
 
     let start_time = Instant::now();
     let mut quit = false;
     while !quit {
+        let mut recreate_pipeline = false;
         events_loop.poll_events(|event| {
-            if let glutin::Event::WindowEvent {
-                event: glutin::WindowEvent::CloseRequested,
-                ..
-            } = event
-            {
-                quit = true;
+            if let glutin::Event::WindowEvent { event, .. } = event {
+                match event {
+                    WindowEvent::CloseRequested => {
+                        quit = true;
+                    }
+                    WindowEvent::KeyboardInput { input, .. }
+                        if input.state == ElementState::Pressed =>
+                    {
+                        // Allow toggling effects
+                        match input.virtual_keycode {
+                            Some(VirtualKeyCode::F1) => {
+                                pipeline_config.shadow_mapping = pipeline_config
+                                    .shadow_mapping
+                                    .clone()
+                                    .map_or(Some(Default::default()), |_| None);
+                                recreate_pipeline = true;
+                            }
+                            Some(VirtualKeyCode::F2) => {
+                                pipeline_config.deferred_shading = pipeline_config
+                                    .deferred_shading
+                                    .clone()
+                                    .map_or(Some(Default::default()), |_| None);
+                                recreate_pipeline = true;
+                            }
+                            Some(VirtualKeyCode::F3) => {
+                                pipeline_config.glow = pipeline_config
+                                    .glow
+                                    .clone()
+                                    .map_or(Some(Default::default()), |_| None);
+                                recreate_pipeline = true;
+                            }
+                            _ => (),
+                        }
+                    }
+                    _ => (),
+                }
             }
         });
+
+        if recreate_pipeline {
+            pipeline = Pipeline::create(&display, &pipeline_config).unwrap();
+        }
 
         let time = start_time.elapsed().as_fractional_secs() as f32;
         let scene = scene(time);
