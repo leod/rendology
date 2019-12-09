@@ -10,9 +10,9 @@ pub struct Camera {
 impl_uniform_input!(
     Camera,
     self => {
-        camera_viewport_size: [f32; 2] => self.viewport_size,
-        camera_projection: [[f32; 4]; 4] => self.projection,
-        camera_view: [[f32; 4]; 4] => self.view,
+        camera_viewport_size: [f32; 2] = self.viewport_size,
+        camera_projection: [[f32; 4]; 4] = self.projection,
+        camera_view: [[f32; 4]; 4] = self.view,
     },
 );
 
