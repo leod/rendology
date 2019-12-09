@@ -36,12 +36,12 @@ pub fn render_shadowed_core_transform<P, I, V>(
 
     let vertex = core
         .vertex
-        .with_extra_uniform("mat_light_view_projection", UniformType::FloatMat4)
+        .with_extra_uniform("shadow_light_projection_view", UniformType::FloatMat4)
         .with_out(
             v_light_space_pos.clone(),
             // Bias shadow coord a bit in the direction of the normal --
             // this is a simple fix for a lot of self-shadowing artifacts
-            "mat_light_view_projection * (v_world_pos + 0.02 * vec4(v_world_normal, 0.0))",
+            "shadow_light_projection_view * (v_world_pos + 0.02 * vec4(v_world_normal, 0.0))",
         );
 
     let fragment = core
@@ -53,8 +53,7 @@ pub fn render_shadowed_core_transform<P, I, V>(
         .with_defs(
             "
             float shadow_calculation(vec4 light_space_pos) {
-                // main_light_pos uniform is provided by Context.
-                vec3 light_dir = normalize(vec3(main_light_pos - v_world_pos.xyz));
+                vec3 light_dir = normalize(vec3(context_main_light_pos - v_world_pos.xyz));
 
                 vec3 proj_coords = light_space_pos.xyz / light_space_pos.w;
                 proj_coords = proj_coords * 0.5 + 0.5;

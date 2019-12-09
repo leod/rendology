@@ -27,7 +27,7 @@ pub use crate::CreationError;
 #[derive(Debug, Clone, Default)]
 pub struct Config;
 
-const LIGHT_MIN_THRESHOLD: f32 = 0.02;
+const LIGHT_MIN_THRESHOLD: f32 = 0.0001;
 
 const NUM_TEXTURES: usize = 2;
 
@@ -85,19 +85,17 @@ impl ScenePassComponent for DeferredShading {
         result
     }
 
-    fn params(&self, _: &Context) -> () {
-        ()
-    }
+    fn params(&self, _: &Context) {}
 }
 
 pub struct CompositionPassParams<'a> {
     light_texture: &'a Texture2d,
 }
 
-impl_uniform_input_with_lifetime!(
+impl_uniform_input!(
     CompositionPassParams<'a>,
     self => {
-        light_texture: &'a Texture2d => self.light_texture,
+        light_texture: &'a Texture2d = self.light_texture,
     },
 );
 
@@ -265,7 +263,7 @@ impl DeferredShading {
                 let no_camera = Camera {
                     view: na::Matrix4::identity(),
                     projection: na::Matrix4::identity(),
-                    viewport: camera.viewport,
+                    viewport_size: camera.viewport_size,
                 };
 
                 let uniforms = (&textures, (no_camera, &light));

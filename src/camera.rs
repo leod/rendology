@@ -2,7 +2,7 @@ use nalgebra as na;
 
 #[derive(Debug, Clone)]
 pub struct Camera {
-    pub viewport: na::Vector4<f32>,
+    pub viewport_size: na::Vector2<f32>,
     pub projection: na::Matrix4<f32>,
     pub view: na::Matrix4<f32>,
 }
@@ -10,16 +10,16 @@ pub struct Camera {
 impl_uniform_input!(
     Camera,
     self => {
-        viewport: [f32; 4] => self.viewport.into(),
-        mat_projection: [[f32; 4]; 4] => self.projection.into(),
-        mat_view: [[f32; 4]; 4] => self.view.into(),
+        camera_viewport_size: [f32; 2] = self.viewport_size,
+        camera_projection: [[f32; 4]; 4] = self.projection,
+        camera_view: [[f32; 4]; 4] = self.view,
     },
 );
 
 impl Camera {
     pub fn new(viewport_size: na::Vector2<f32>, projection: na::Matrix4<f32>) -> Camera {
         Camera {
-            viewport: na::Vector4::new(0.0, 0.0, viewport_size.x, viewport_size.y),
+            viewport_size,
             projection,
             view: na::Matrix4::identity(),
         }
@@ -30,8 +30,8 @@ impl Camera {
         let h = q.fixed_rows::<na::U3>(0) / q.w;
 
         na::Point3::new(
-            self.viewport.x + (h.x + 1.0) / 2.0 * self.viewport.z,
-            self.viewport.y + (1.0 - (h.y + 1.0) / 2.0) * self.viewport.w,
+            (h.x + 1.0) / 2.0 * self.viewport_size.x,
+            (1.0 - (h.y + 1.0) / 2.0) * self.viewport_size.y,
             h.z,
         )
     }
@@ -45,8 +45,8 @@ impl Camera {
             .unwrap_or_else(na::Matrix4::zeros);
 
         let point = na::Vector4::new(
-            2.0 * (win.x - self.viewport.x) / self.viewport.z - 1.0,
-            2.0 * (self.viewport.w - win.y - self.viewport.y) / self.viewport.w - 1.0,
+            2.0 * win.x / self.viewport_size.x - 1.0,
+            2.0 * (self.viewport_size.y - win.y) / self.viewport_size.y - 1.0,
             2.0 * win.z - 1.0,
             1.0,
         );

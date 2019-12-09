@@ -176,7 +176,7 @@ fn render_context(target_size: (u32, u32)) -> rendology::Context {
             1000.0,
         )
         .to_homogeneous(),
-        viewport: na::Vector4::new(0.0, 0.0, target_size.0 as f32, target_size.1 as f32),
+        viewport_size: na::Vector2::new(target_size.0 as f32, target_size.1 as f32),
     };
 
     rendology::Context {

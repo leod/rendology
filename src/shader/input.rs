@@ -9,7 +9,7 @@ pub trait HasUniforms<'u> {
 }
 
 pub trait ToUniforms: for<'u> HasUniforms<'u> {
-    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms;
+    fn to_uniforms(&self) -> <Self as HasUniforms<'_>>::Uniforms;
 }
 
 pub trait UniformInput: ToUniforms {
@@ -100,7 +100,7 @@ impl<'b, U> ToUniforms for &'b U
 where
     U: ToUniforms,
 {
-    fn to_uniforms<'u>(&'u self) -> <U as HasUniforms<'u>>::Uniforms {
+    fn to_uniforms(&self) -> <U as HasUniforms<'_>>::Uniforms {
         (*self).to_uniforms()
     }
 }
@@ -110,7 +110,7 @@ where
     U1: ToUniforms,
     U2: ToUniforms,
 {
-    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms {
+    fn to_uniforms(&self) -> <Self as HasUniforms<'_>>::Uniforms {
         UniformsPair(self.0.to_uniforms(), self.1.to_uniforms())
     }
 }
@@ -121,7 +121,7 @@ where
     U2: ToUniforms,
     U3: ToUniforms,
 {
-    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms {
+    fn to_uniforms(&self) -> <Self as HasUniforms<'_>>::Uniforms {
         UniformsPair(
             self.0.to_uniforms(),
             UniformsPair(self.1.to_uniforms(), self.2.to_uniforms()),
@@ -136,7 +136,7 @@ where
     U3: ToUniforms,
     U4: ToUniforms,
 {
-    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms {
+    fn to_uniforms(&self) -> <Self as HasUniforms<'_>>::Uniforms {
         UniformsPair(
             self.0.to_uniforms(),
             UniformsPair(
@@ -151,7 +151,7 @@ impl<U> ToUniforms for Option<U>
 where
     U: ToUniforms,
 {
-    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms {
+    fn to_uniforms(&self) -> <Self as HasUniforms<'_>>::Uniforms {
         UniformsOption(self.as_ref().map(ToUniforms::to_uniforms))
     }
 }
@@ -220,13 +220,16 @@ where
 }
 
 impl CompatibleWith<()> for () {}
+
 impl<'b, U> CompatibleWith<&'b U> for &'b U where U: ToUniforms {}
+
 impl<U1, U2> CompatibleWith<(U1, U2)> for (U1, U2)
 where
     U1: ToUniforms,
     U2: ToUniforms,
 {
 }
+
 impl<U> CompatibleWith<Option<U>> for Option<U> where U: ToUniforms {}
 
 pub struct UniformsOption<U>(Option<U>);
@@ -428,7 +431,7 @@ macro_rules! plain_uniforms {
 macro_rules! impl_uniform_input_detail {
     (
         $ty:ident,
-        $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
+        $this:ident => { $( $field:ident: $type:ty = $value:expr, )* } $(,)?
     ) => {
         #[derive(Copy, Clone, Debug)]
         pub struct MyUniforms {
@@ -458,7 +461,7 @@ macro_rules! impl_uniform_input_detail {
             fn to_uniforms(&$this) -> MyUniforms {
                 MyUniforms {
                     $(
-                        $field: $value,
+                        $field: $value.into(),
                     )*
                 }
             }
@@ -483,62 +486,20 @@ macro_rules! impl_uniform_input_detail {
 macro_rules! impl_uniform_input {
     (
         $ty:ident,
-        $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
+        $this:ident => { $( $field:ident: $type:ty = $value:expr, )* } $(,)?
     ) => {
         const _: () = {
             $crate::impl_uniform_input_detail!(
                 $ty,
-                $this => { $($field: $type => $value, )* }
+                $this => { $($field: $type = $value, )* }
             );
 
             ()
         };
-    }
-}
-
-#[macro_export]
-macro_rules! impl_instance_input {
-    (
-        $ty:ident,
-        $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
-    ) => {
-        const _: () = {
-            $crate::impl_uniform_input_detail!(
-                $ty,
-                $this => { $($field: $type => $value, )* }
-            );
-
-            use glium::implement_vertex;
-            implement_vertex!(MyUniforms, $($field,)*);
-
-            impl<'u> $crate::shader::input::HasUniforms<'u> for MyUniforms {
-                type Uniforms = Self;
-            }
-
-            impl $crate::shader::ToUniforms for MyUniforms {
-                fn to_uniforms(&self) -> Self {
-                    self.clone()
-                }
-            }
-
-            impl $crate::shader::InstanceInput for $ty {
-                type Vertex = MyUniforms;
-
-                fn to_vertex(&self) -> Self::Vertex {
-                    $crate::shader::ToUniforms::to_uniforms(self)
-                }
-            }
-
-            ()
-        };
-    }
-}
-
-#[macro_export]
-macro_rules! impl_uniform_input_with_lifetime {
+    };
     (
         $ty:ident<$life:lifetime>,
-        $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
+        $this:ident => { $( $field:ident: $type:ty = $value:expr, )* } $(,)?
     ) => {
         const _: () = {
             #[derive(Copy, Clone, Debug)]
@@ -589,6 +550,44 @@ macro_rules! impl_uniform_input_with_lifetime {
             }
 
             impl<'a> $crate::shader::input::CompatibleWith<$ty<'static>> for $ty<'a> {
+            }
+
+            ()
+        };
+    }
+}
+
+#[macro_export]
+macro_rules! impl_instance_input {
+    (
+        $ty:ident,
+        $this:ident => { $( $field:ident: $type:ty = $value:expr, )* } $(,)?
+    ) => {
+        const _: () = {
+            $crate::impl_uniform_input_detail!(
+                $ty,
+                $this => { $($field: $type = $value, )* }
+            );
+
+            use glium::implement_vertex;
+            implement_vertex!(MyUniforms, $($field,)*);
+
+            impl<'u> $crate::shader::input::HasUniforms<'u> for MyUniforms {
+                type Uniforms = Self;
+            }
+
+            impl $crate::shader::ToUniforms for MyUniforms {
+                fn to_uniforms(&self) -> Self {
+                    self.clone()
+                }
+            }
+
+            impl $crate::shader::InstanceInput for $ty {
+                type Vertex = MyUniforms;
+
+                fn to_vertex(&self) -> Self::Vertex {
+                    $crate::shader::ToUniforms::to_uniforms(self)
+                }
             }
 
             ()

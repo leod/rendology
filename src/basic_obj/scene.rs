@@ -21,8 +21,8 @@ impl Default for Instance {
 impl_instance_input!(
     Instance,
     self => {
-        mat_model: [[f32; 4]; 4] => self.transform.into(),
-        color: [f32; 4] => self.color.into(),
+        instance_transform: [[f32; 4]; 4] = self.transform,
+        instance_color: [f32; 4] = self.color,
     },
 );
 
@@ -38,16 +38,16 @@ impl SceneCore for Core {
             .with_out(
                 // TODO: Precompute inverse of mat_model if we ever have lots of vertices
                 shader::defs::v_world_normal(),
-                "normalize(transpose(inverse(mat3(mat_model))) * normal)",
+                "normalize(transpose(inverse(mat3(instance_transform))) * normal)",
             )
             .with_out(
                 shader::defs::v_world_pos(),
-                "mat_model * vec4(position, 1.0)",
+                "instance_transform * vec4(position, 1.0)",
             )
-            .with_out(shader::defs::v_color(), "color")
+            .with_out(shader::defs::v_color(), "instance_color")
             .with_out_expr(
                 shader::defs::V_POSITION,
-                "mat_projection * mat_view * v_world_pos",
+                "context_camera_projection * context_camera_view * v_world_pos",
             );
 
         let fragment = shader::FragmentCore::empty()
