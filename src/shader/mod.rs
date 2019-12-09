@@ -371,7 +371,7 @@ where
         &self,
         facade: &F,
         mode: InstancingMode,
-    ) -> Result<glium::Program, glium::program::ProgramCreationError> {
+    ) -> Result<glium::Program, BuildError> {
         self.link().build_program(facade, mode)
     }
 }
@@ -386,9 +386,12 @@ where
         &self,
         facade: &F,
         mode: InstancingMode,
-    ) -> Result<glium::Program, glium::program::ProgramCreationError> {
+    ) -> Result<glium::Program, BuildError> {
         let vertex = self.vertex.compile(mode);
         let fragment = self.fragment.compile();
+
+        //println!("{}", vertex);
+        //println!("{}", fragment);
 
         // We use the long form of `glium::Program` construction here, since
         // glium by default sets `outputs_rgb` to false, which causes it to
@@ -413,7 +416,19 @@ where
                 uses_point_size: false,
             },
         )
+        .map_err(|error| BuildError {
+            compiled_vertex_source: vertex,
+            compiled_fragment_source: fragment,
+            error,
+        })
     }
+}
+
+#[derive(Debug)]
+pub struct BuildError {
+    pub compiled_vertex_source: String,
+    pub compiled_fragment_source: String,
+    pub error: glium::program::ProgramCreationError,
 }
 
 fn compile_uniform_type(t: UniformType) -> &'static str {
