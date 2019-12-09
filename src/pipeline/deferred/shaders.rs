@@ -120,7 +120,7 @@ fn light_fragment_core() -> shader::FragmentCore<Camera> {
                 v_light_attenuation,
                 vec3(1, light_distance, light_distance_sq)
             );
-            diffuse *= max(attenuation, 0.0);
+            diffuse *= attenuation;
 
             float radiance = diffuse;
             ",

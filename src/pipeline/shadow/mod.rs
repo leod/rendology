@@ -102,7 +102,7 @@ impl ShadowMapping {
 
     fn light_projection(&self) -> na::Matrix4<f32> {
         let w = 20.0;
-        na::Matrix4::new_orthographic(-w, w, -w, w, 10.0, 50.0)
+        na::Matrix4::new_orthographic(-w, w, -w, w, 0.01, 50.0)
     }
 
     fn light_view(&self, context: &Context) -> na::Matrix4<f32> {
