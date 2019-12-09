@@ -1,5 +1,5 @@
 # Changelog
-## Version 0.3.0 (2019-12-08)
+## Version 0.3.0 (2019-12-10)
 - Allow passing draw parameters to shadow pass ([#3](https://github.com/leod/rendology/pull/3))
 - Overhaul `ToUniforms` to allow lifetimes ([#3](https://github.com/leod/rendology/pull/3))
 - Add textured cube example ([#3](https://github.com/leod/rendology/pull/3))
