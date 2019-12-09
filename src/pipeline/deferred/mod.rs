@@ -116,8 +116,8 @@ impl<'u> HasCompositionPassParams<'u> for DeferredShading {
 impl CompositionPassComponent for DeferredShading {
     fn core_transform(
         &self,
-        core: shader::Core<(), (), screen_quad::Vertex>,
-    ) -> shader::Core<(), (), screen_quad::Vertex> {
+        core: shader::Core<Context, (), screen_quad::Vertex>,
+    ) -> shader::Core<Context, (), screen_quad::Vertex> {
         shaders::composition_core_transform(core)
     }
 
