@@ -5,15 +5,82 @@ use glium::{glutin, Surface};
 use nalgebra as na;
 
 use rendology::{
-    basic_obj, BasicObj, Instancing, InstancingMode, Light, Mesh, RenderList, ShadedScenePass,
+    basic_obj, BasicObj, InstancingMode, Light, Mesh, RenderList, ShadedScenePass,
     ShadedScenePassSetup, ShadowPass,
 };
 
 const WINDOW_SIZE: (u32, u32) = (1280, 720);
 
+mod my_scene {
+    use nalgebra as na;
+    use rendology::{basic_obj, shader, Context, SceneCore};
+
+    #[derive(Clone)]
+    pub struct Params<'a> {
+        pub time: f32,
+        pub texture: &'a glium::texture::CompressedSrgbTexture2d,
+    }
+
+    #[derive(Clone)]
+    pub struct Instance {
+        pub transform: na::Matrix4<f32>,
+    }
+
+    rendology::impl_uniform_input_with_lifetime!(
+        Params<'a>,
+        self => {
+            time: f32 => self.time,
+            my_texture: &'a glium::texture::CompressedSrgbTexture2d => self.texture,
+        },
+    );
+
+    rendology::impl_instance_input!(
+        Instance,
+        self => {
+            mat_model: [[f32; 4]; 4] => self.transform.into(),
+        },
+    );
+
+    pub struct Core;
+
+    impl SceneCore for Core {
+        type Params = Params<'static>;
+        type Instance = Instance;
+        type Vertex = basic_obj::Vertex;
+
+        fn scene_core(
+            &self,
+        ) -> shader::Core<(Context, Self::Params), Self::Instance, Self::Vertex> {
+            let position = "position + 0.2 * sin(time) * sin(time) * normal";
+
+            let vertex = shader::VertexCore::empty()
+                .with_out(
+                    shader::defs::v_world_normal(),
+                    "normalize(transpose(inverse(mat3(mat_model))) * normal)",
+                )
+                .with_out(
+                    shader::defs::v_world_pos(),
+                    &format!("mat_model * vec4({}, 1.0)", position),
+                )
+                .with_out(shader::defs::v_tex_coord(), "position.xy + 0.5")
+                .with_out_expr(
+                    shader::defs::V_POSITION,
+                    "mat_projection * mat_view * v_world_pos",
+                );
+            let fragment = shader::FragmentCore::empty()
+                .with_in_def(shader::defs::v_tex_coord())
+                .with_out(shader::defs::f_color(), "texture(my_texture, v_tex_coord)");
+
+            shader::Core { vertex, fragment }
+        }
+    }
+}
+
 #[derive(Default)]
 struct Scene {
+    time: f32,
     cubes: RenderList<basic_obj::Instance>,
+    my_cubes: RenderList<my_scene::Instance>,
     lights: Vec<Light>,
 }
 
@@ -23,8 +90,11 @@ struct Pipeline {
     shadow_pass: Option<ShadowPass<basic_obj::Core>>,
     scene_pass: ShadedScenePass<basic_obj::Core>,
 
+    my_shadow_pass: Option<ShadowPass<my_scene::Core>>,
+    my_scene_pass: ShadedScenePass<my_scene::Core>,
+
     cube: Mesh<basic_obj::Vertex>,
-    cube_instancing: Instancing<basic_obj::Instance>,
+    texture: glium::texture::CompressedSrgbTexture2d,
 }
 
 impl Pipeline {
@@ -35,26 +105,53 @@ impl Pipeline {
         let rendology = rendology::Pipeline::create(facade, config, WINDOW_SIZE)?;
 
         let shadow_pass =
-            rendology.create_shadow_pass(facade, basic_obj::Core, InstancingMode::Vertex)?;
+            rendology.create_shadow_pass(facade, basic_obj::Core, InstancingMode::Uniforms)?;
         let scene_pass = rendology.create_shaded_scene_pass(
             facade,
             basic_obj::Core,
-            InstancingMode::Vertex,
+            InstancingMode::Uniforms,
             ShadedScenePassSetup {
                 draw_shadowed: true,
                 draw_glowing: false,
             },
         )?;
 
+        let my_shadow_pass =
+            rendology.create_shadow_pass(facade, my_scene::Core, InstancingMode::Uniforms)?;
+        let my_scene_pass = rendology.create_shaded_scene_pass(
+            facade,
+            my_scene::Core,
+            InstancingMode::Uniforms,
+            ShadedScenePassSetup {
+                draw_shadowed: true,
+                draw_glowing: true,
+            },
+        )?;
+
         let cube = BasicObj::Cube.create_mesh(facade)?;
-        let cube_instancing = Instancing::create(facade)?;
+
+        let texture = {
+            let image = image::load(
+                std::io::Cursor::new(&include_bytes!("texture.png")[..]),
+                image::PNG,
+            )
+            .unwrap()
+            .to_rgba();
+            let dimensions = image.dimensions();
+            let image =
+                glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), dimensions);
+
+            glium::texture::CompressedSrgbTexture2d::new(facade, image).unwrap()
+        };
 
         Ok(Pipeline {
             rendology,
             shadow_pass,
             scene_pass,
+            my_shadow_pass,
+            my_scene_pass,
             cube,
-            cube_instancing,
+            texture,
         })
     }
 
@@ -65,12 +162,14 @@ impl Pipeline {
         scene: &Scene,
         target: &mut S,
     ) -> Result<(), rendology::DrawError> {
-        self.cube_instancing
-            .update(facade, scene.cubes.as_slice())?;
-
         let draw_params = glium::DrawParameters {
             backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
             ..Default::default()
+        };
+
+        let my_params = my_scene::Params {
+            time: scene.time,
+            texture: &self.texture,
         };
 
         self.rendology
@@ -78,16 +177,28 @@ impl Pipeline {
             .shadow_pass()
             .draw(
                 &self.shadow_pass,
-                &self.cube_instancing.as_drawable(&self.cube),
+                &scene.cubes.as_drawable(&self.cube),
                 &(),
                 &draw_params,
+            )?
+            .draw(
+                &self.my_shadow_pass,
+                &scene.my_cubes.as_drawable(&self.cube),
+                &my_params,
+                &Default::default(),
             )?
             .shaded_scene_pass()
             .draw(
                 &self.scene_pass,
-                &self.cube_instancing.as_drawable(&self.cube),
+                &scene.cubes.as_drawable(&self.cube),
                 &(),
                 &draw_params,
+            )?
+            .draw(
+                &self.my_scene_pass,
+                &scene.my_cubes.as_drawable(&self.cube),
+                &my_params,
+                &Default::default(),
             )?
             .compose(&scene.lights)?
             .present()
@@ -108,7 +219,11 @@ fn main() {
     };
 
     // Initialize rendology pipeline
-    let mut pipeline = Pipeline::create(&display, &Default::default()).unwrap();
+    let config = rendology::Config {
+        hdr: Some(1.0),
+        ..Default::default()
+    };
+    let mut pipeline = Pipeline::create(&display, &config).unwrap();
 
     let start_time = Instant::now();
     let mut quit = false;
@@ -140,15 +255,16 @@ fn main() {
 fn scene(time: f32) -> Scene {
     let mut scene = Scene::default();
 
-    scene.cubes.add(basic_obj::Instance {
-        transform: na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 3.0))
-            * na::Matrix4::from_euler_angles(time, time, time),
-        color: na::Vector4::new(0.9, 0.9, 0.9, 1.0),
-    });
+    scene.time = time;
 
     scene.cubes.add(basic_obj::Instance {
         transform: na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(10.0, 10.0, 0.1)),
-        color: na::Vector4::new(0.0, 1.0, 0.0, 1.0),
+        color: na::Vector4::new(0.9, 0.9, 0.9, 1.0),
+    });
+
+    scene.my_cubes.add(my_scene::Instance {
+        transform: na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 3.0))
+            * na::Matrix4::from_euler_angles(time, time, time),
     });
 
     scene.lights.push(Light {

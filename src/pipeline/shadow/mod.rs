@@ -9,9 +9,11 @@ use log::info;
 
 use nalgebra as na;
 
-use glium::{uniform, Surface};
+use glium::texture::DepthTexture2d;
+use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler};
+use glium::Surface;
 
-use crate::pipeline::{RenderPassComponent, ScenePassComponent};
+use crate::pipeline::render_pass::{HasScenePassParams, RenderPassComponent, ScenePassComponent};
 use crate::shader::{self, ToUniforms};
 use crate::{Camera, Context, DrawError, Drawable};
 
@@ -31,7 +33,7 @@ impl Default for Config {
 }
 
 pub struct ShadowMapping {
-    shadow_texture: glium::texture::DepthTexture2d,
+    shadow_texture: DepthTexture2d,
 }
 
 impl RenderPassComponent for ShadowMapping {
@@ -45,16 +47,42 @@ impl RenderPassComponent for ShadowMapping {
     }
 }
 
+pub struct ScenePassParams<'a> {
+    mat_light_view_projection: na::Matrix4<f32>,
+    shadow_map: Sampler<'a, DepthTexture2d>,
+}
+
+impl_uniform_input_with_lifetime!(
+    ScenePassParams<'a>,
+    self => {
+        mat_light_view_projection: [[f32; 4]; 4] => self.mat_light_view_projection.into(),
+        shadow_map: Sampler<'a, DepthTexture2d> => self.shadow_map,
+    },
+);
+
+impl<'u> HasScenePassParams<'u> for ShadowMapping {
+    type Params = ScenePassParams<'u>;
+}
+
 impl ScenePassComponent for ShadowMapping {
     /// Transforms a shader so that it shadows the scene.
     ///
     /// Note that the transformed shader will require additional uniforms,
-    /// which are given by `ShadowMapping::scene_pass_uniforms`.
+    /// which are given by `params`.
     fn core_transform<P, I, V>(
         &self,
         core: shader::Core<(Context, P), I, V>,
     ) -> shader::Core<(Context, P), I, V> {
         shaders::render_shadowed_core_transform(core)
+    }
+
+    fn params(&self, context: &Context) -> ScenePassParams {
+        ScenePassParams {
+            mat_light_view_projection: self.light_projection() * self.light_view(context),
+            shadow_map: Sampler::new(&self.shadow_texture)
+                .magnify_filter(MagnifySamplerFilter::Nearest)
+                .minify_filter(MinifySamplerFilter::Nearest),
+        }
     }
 }
 
@@ -64,11 +92,8 @@ impl ShadowMapping {
         config: &Config,
     ) -> Result<ShadowMapping, CreationError> {
         info!("Creating shadow texture");
-        let shadow_texture = glium::texture::DepthTexture2d::empty(
-            facade,
-            config.shadow_map_size.x,
-            config.shadow_map_size.y,
-        )?;
+        let shadow_texture =
+            DepthTexture2d::empty(facade, config.shadow_map_size.x, config.shadow_map_size.y)?;
 
         info!("Shadow mapping initialized");
 
@@ -102,6 +127,7 @@ impl ShadowMapping {
         drawable: &impl Drawable<I, V>,
         program: &glium::Program,
         params: (&Context, P),
+        draw_params: &glium::DrawParameters,
     ) -> Result<(), DrawError>
     where
         F: glium::backend::Facade,
@@ -126,13 +152,12 @@ impl ShadowMapping {
         };
 
         let draw_params = glium::DrawParameters {
-            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
             depth: glium::Depth {
                 test: glium::DepthTest::IfLessOrEqual,
                 write: true,
                 ..Default::default()
             },
-            ..Default::default()
+            ..draw_params.clone()
         };
 
         drawable.draw(
@@ -141,20 +166,5 @@ impl ShadowMapping {
             &draw_params,
             &mut shadow_target,
         )
-    }
-
-    /// Returns uniforms for binding the shadow map during scene pass.
-    pub fn scene_pass_uniforms(&self, context: &Context) -> impl ToUniforms + '_ {
-        let light_projection = self.light_projection();
-        let light_view = self.light_view(context);
-        let mat_light_view_projection: [[f32; 4]; 4] = (light_projection * light_view).into();
-        let shadow_map = glium::uniforms::Sampler::new(&self.shadow_texture)
-            .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
-            .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest);
-
-        uniform! {
-            mat_light_view_projection: mat_light_view_projection,
-            shadow_map: shadow_map,
-        }
     }
 }

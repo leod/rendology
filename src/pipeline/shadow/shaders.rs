@@ -6,8 +6,8 @@ use crate::shader;
 /// Shader core for rendering the depth map from the light source's perspective.
 pub fn depth_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader::Core<P, I, V> {
     // Only write depth into the output, discard color output of original core
-    let fragment = shader::FragmentCore::default()
-        .with_out(shader::defs::f_fragment_depth(), "gl_FragCoord.z");
+    let fragment =
+        shader::FragmentCore::empty().with_out(shader::defs::f_fragment_depth(), "gl_FragCoord.z");
 
     shader::Core {
         vertex: core.vertex,

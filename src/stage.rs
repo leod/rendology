@@ -12,10 +12,10 @@ pub struct Context {
 impl_uniform_input!(
     Context,
     self => {
-        viewport: Vec4 => self.camera.viewport.into(),
-        mat_projection: Mat4 => self.camera.projection.into(),
-        mat_view: Mat4 => self.camera.view.into(),
-        main_light_pos: Vec3 => self.main_light_pos.coords.into(),
+        viewport: [f32; 4] => self.camera.viewport.into(),
+        mat_projection: [[f32; 4]; 4] => self.camera.projection.into(),
+        mat_view: [[f32; 4]; 4] => self.camera.view.into(),
+        main_light_pos: [f32; 3] => self.main_light_pos.coords.into(),
     },
 );
 
@@ -31,11 +31,11 @@ pub struct Light {
 impl_instance_input!(
     Light,
     self => {
-        light_position: Vec3 => self.position.coords.into(),
-        light_attenuation: Vec3 => self.attenuation.into(),
-        light_color: Vec3 => self.color.into(),
+        light_position: [f32; 3] => self.position.coords.into(),
+        light_attenuation: [f32; 3] => self.attenuation.into(),
+        light_color: [f32; 3] => self.color.into(),
         //light_is_main: Bool => self.is_main,
-        light_radius: Float => self.radius,
+        light_radius: f32 => self.radius,
     },
 );
 
