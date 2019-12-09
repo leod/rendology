@@ -103,9 +103,9 @@ pub fn blur_core() -> shader::Core<(), (), screen_quad::Vertex> {
 }
 
 /// Shader core for composing the glow texture with the scene texture.
-pub fn composition_core_transform(
-    core: shader::Core<(), (), screen_quad::Vertex>,
-) -> shader::Core<(), (), screen_quad::Vertex> {
+pub fn composition_core_transform<P>(
+    core: shader::Core<P, (), screen_quad::Vertex>,
+) -> shader::Core<P, (), screen_quad::Vertex> {
     assert!(
         core.fragment.has_in(shader::defs::V_TEX_COORD),
         "FragmentCore needs V_TEX_COORD input for glow composition pass"

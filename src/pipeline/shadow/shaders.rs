@@ -17,6 +17,7 @@ pub fn depth_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader:
 
 /// Shader core for rendering the shadowed scene.
 pub fn render_shadowed_core_transform<P, I, V>(
+    shadow_value: f32,
     core: shader::Core<(Context, P), I, V>,
 ) -> shader::Core<(Context, P), I, V> {
     assert!(
@@ -44,39 +45,43 @@ pub fn render_shadowed_core_transform<P, I, V>(
             "shadow_light_projection_view * (v_world_pos + 0.02 * vec4(v_world_normal, 0.0))",
         );
 
+    let mut shadow_calculation = "
+        float shadow_calculation(vec4 light_space_pos) {
+            vec3 light_dir = normalize(vec3(context_main_light_pos - v_world_pos.xyz));
+
+            vec3 proj_coords = light_space_pos.xyz / light_space_pos.w;
+            proj_coords = proj_coords * 0.5 + 0.5;
+
+            if (dot(light_dir, v_world_normal) < 0.0)
+                return 0.5;
+
+            // TODO: Is there a way to do this on texture-level?
+            if (proj_coords.z > 1.0
+                || proj_coords.x < 0.0
+                || proj_coords.x > 1.0
+                || proj_coords.y < 0.0
+                || proj_coords.y > 1.0) {
+                return 1.0;
+            }
+
+            float closest_depth = texture(shadow_map, proj_coords.xy).r;
+            float current_depth = proj_coords.z;
+        "
+    .to_string();
+
+    shadow_calculation += &format!(
+        "return current_depth > closest_depth ? {} : 1.0;",
+        shadow_value
+    );
+    shadow_calculation += "\n}";
+
     let fragment = core
         .fragment
         .with_extra_uniform("shadow_map", UniformType::Sampler2d)
         .with_in_def(shader::defs::v_world_pos())
         .with_in_def(shader::defs::v_world_normal())
         .with_in_def(v_light_space_pos)
-        .with_defs(
-            "
-            float shadow_calculation(vec4 light_space_pos) {
-                vec3 light_dir = normalize(vec3(context_main_light_pos - v_world_pos.xyz));
-
-                vec3 proj_coords = light_space_pos.xyz / light_space_pos.w;
-                proj_coords = proj_coords * 0.5 + 0.5;
-
-                if (dot(light_dir, v_world_normal) < 0.0)
-                    return 0.5;
-
-                // TODO: Is there a way to do this on texture-level?
-                if (proj_coords.z > 1.0
-                    || proj_coords.x < 0.0
-                    || proj_coords.x > 1.0
-                    || proj_coords.y < 0.0
-                    || proj_coords.y > 1.0) {
-                    return 1.0;
-                }
-
-                float closest_depth = texture(shadow_map, proj_coords.xy).r;
-                float current_depth = proj_coords.z;
-
-                return current_depth > closest_depth ? 0.5 : 1.0;
-            }
-            ",
-        )
+        .with_defs(&shadow_calculation)
         .with_out(
             shader::defs::f_shadow(),
             "shadow_calculation(v_light_space_pos)",
