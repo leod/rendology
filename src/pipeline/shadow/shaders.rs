@@ -45,7 +45,7 @@ pub fn render_shadowed_core_transform<P, I, V>(
             "shadow_light_projection_view * (v_world_pos + 0.02 * vec4(v_world_normal, 0.0))",
         );
 
-    let mut shadow_calculation = "
+    let shadow_calculation = "
         float shadow_calculation(vec4 light_space_pos) {
             vec3 light_dir = normalize(vec3(context_main_light_pos - v_world_pos.xyz));
 
@@ -53,7 +53,7 @@ pub fn render_shadowed_core_transform<P, I, V>(
             proj_coords = proj_coords * 0.5 + 0.5;
 
             if (dot(light_dir, v_world_normal) < 0.0)
-                return 0.5;
+                return SHADOW_VALUE;
 
             // TODO: Is there a way to do this on texture-level?
             if (proj_coords.z > 1.0
@@ -66,14 +66,10 @@ pub fn render_shadowed_core_transform<P, I, V>(
 
             float closest_depth = texture(shadow_map, proj_coords.xy).r;
             float current_depth = proj_coords.z;
-        "
-    .to_string();
 
-    shadow_calculation += &format!(
-        "return current_depth > closest_depth ? {} : 1.0;",
-        shadow_value
-    );
-    shadow_calculation += "\n}";
+            return current_depth > closest_depth ? SHADOW_VALUE : 1.0;
+        }
+    ".to_string().replace("SHADOW_VALUE", &shadow_value.to_string());
 
     let fragment = core
         .fragment
