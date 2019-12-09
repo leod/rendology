@@ -27,7 +27,7 @@ pub use crate::CreationError;
 #[derive(Debug, Clone, Default)]
 pub struct Config;
 
-const LIGHT_MIN_THRESHOLD: f32 = 0.02;
+const LIGHT_MIN_THRESHOLD: f32 = 0.0001;
 
 const NUM_TEXTURES: usize = 2;
 

@@ -82,6 +82,7 @@ mod my_scene {
 struct Scene {
     time: f32,
     cubes: RenderList<basic_obj::Instance>,
+    glowing_cubes: RenderList<basic_obj::Instance>,
     my_cubes: RenderList<my_scene::Instance>,
     lights: Vec<Light>,
 }
@@ -91,6 +92,7 @@ struct Pipeline {
 
     shadow_pass: Option<ShadowPass<basic_obj::Core>>,
     scene_pass: ShadedScenePass<basic_obj::Core>,
+    glowing_scene_pass: ShadedScenePass<basic_obj::Core>,
 
     my_shadow_pass: Option<ShadowPass<my_scene::Core>>,
     my_scene_pass: ShadedScenePass<my_scene::Core>,
@@ -117,6 +119,15 @@ impl Pipeline {
                 draw_glowing: false,
             },
         )?;
+        let glowing_scene_pass = rendology.create_shaded_scene_pass(
+            facade,
+            basic_obj::Core,
+            InstancingMode::Uniforms,
+            ShadedScenePassSetup {
+                draw_shadowed: true,
+                draw_glowing: true,
+            },
+        )?;
 
         let my_shadow_pass =
             rendology.create_shadow_pass(facade, my_scene::Core, InstancingMode::Uniforms)?;
@@ -126,7 +137,7 @@ impl Pipeline {
             InstancingMode::Uniforms,
             ShadedScenePassSetup {
                 draw_shadowed: true,
-                draw_glowing: true,
+                draw_glowing: false,
             },
         )?;
 
@@ -150,6 +161,7 @@ impl Pipeline {
             rendology,
             shadow_pass,
             scene_pass,
+            glowing_scene_pass,
             my_shadow_pass,
             my_scene_pass,
             cube,
@@ -179,7 +191,7 @@ impl Pipeline {
             .shadow_pass()
             .draw(
                 &self.shadow_pass,
-                &scene.cubes.as_drawable(&self.cube),
+                &scene.glowing_cubes.as_drawable(&self.cube),
                 &(),
                 &draw_params,
             )?
@@ -193,6 +205,12 @@ impl Pipeline {
             .draw(
                 &self.scene_pass,
                 &scene.cubes.as_drawable(&self.cube),
+                &(),
+                &draw_params,
+            )?
+            .draw(
+                &self.glowing_scene_pass,
+                &scene.glowing_cubes.as_drawable(&self.cube),
                 &(),
                 &draw_params,
             )?
@@ -292,25 +310,56 @@ fn main() {
 fn scene(time: f32) -> Scene {
     let mut scene = Scene::default();
 
+    let time = time / 2.0;
+
     scene.time = time;
 
     scene.cubes.add(basic_obj::Instance {
         transform: na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(10.0, 10.0, 0.1)),
-        color: na::Vector4::new(0.9, 0.9, 0.9, 1.0),
+        color: na::Vector4::new(0.8, 0.8, 0.8, 1.0),
     });
 
+    for i in 0..7 {
+        let off = i as f32 * std::f32::consts::PI * 2.0 / 7.0;
+        let orbit_transform = na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 4.0))
+            * na::Matrix4::from_euler_angles(time + off, off, time / 2.0)
+            * na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 3.0))
+            * na::Matrix4::new_scaling(0.75);
+
+        let color = if i % 2 == 0 && i % 3 == 0 {
+            na::Vector4::new(0.5, 0.1, 0.1, 1.0)
+        } else if i % 2 == 0 {
+            na::Vector4::new(0.1, 0.5, 0.1, 1.0)
+        } else {
+            na::Vector4::new(0.1, 0.1, 0.5, 1.0)
+        };
+
+        scene.glowing_cubes.add(basic_obj::Instance {
+            transform: orbit_transform,
+            color,
+        });
+
+        scene.lights.push(Light {
+            position: orbit_transform.transform_point(&na::Point3::origin()),
+            attenuation: na::Vector3::new(1.0, 0.7, 4.0),
+            color: na::Vector3::new(color.x, color.y, color.z),
+            is_main: false,
+            ..Default::default()
+        });
+    }
+
     scene.my_cubes.add(my_scene::Instance {
-        transform: na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 3.0))
+        transform: na::Matrix4::new_translation(&na::Vector3::new(0.0, 0.0, 4.0))
             * na::Matrix4::from_euler_angles(time, time, time),
     });
 
-    scene.lights.push(Light {
-        position: na::Point3::new(10.0, 10.0, 10.0),
+    /*scene.lights.push(Light {
+        position: na::Point3::new(1.0, 1.0, 10.0),
         attenuation: na::Vector3::new(1.0, 0.0, 0.0),
         color: na::Vector3::new(1.0, 1.0, 1.0),
         is_main: true,
         ..Default::default()
-    });
+    });*/
 
     scene
 }
@@ -334,7 +383,7 @@ fn render_context(target_size: (u32, u32)) -> rendology::Context {
 
     rendology::Context {
         camera,
-        main_light_pos: na::Point3::new(10.0, 10.0, 10.0),
+        main_light_pos: na::Point3::new(1.0, 1.0, 10.0),
         main_light_center: na::Point3::new(0.0, 0.0, 0.0),
     }
 }
