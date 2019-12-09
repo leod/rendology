@@ -52,7 +52,7 @@ pub struct ScenePassParams<'a> {
     shadow_map: Sampler<'a, DepthTexture2d>,
 }
 
-impl_uniform_input_with_lifetime!(
+impl_uniform_input!(
     ScenePassParams<'a>,
     self => {
         shadow_light_projection_view: [[f32; 4]; 4] = self.light_projection_view.into(),

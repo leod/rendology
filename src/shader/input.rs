@@ -220,13 +220,16 @@ where
 }
 
 impl CompatibleWith<()> for () {}
+
 impl<'b, U> CompatibleWith<&'b U> for &'b U where U: ToUniforms {}
+
 impl<U1, U2> CompatibleWith<(U1, U2)> for (U1, U2)
 where
     U1: ToUniforms,
     U2: ToUniforms,
 {
 }
+
 impl<U> CompatibleWith<Option<U>> for Option<U> where U: ToUniforms {}
 
 pub struct UniformsOption<U>(Option<U>);
@@ -493,49 +496,7 @@ macro_rules! impl_uniform_input {
 
             ()
         };
-    }
-}
-
-#[macro_export]
-macro_rules! impl_instance_input {
-    (
-        $ty:ident,
-        $this:ident => { $( $field:ident: $type:ty = $value:expr, )* } $(,)?
-    ) => {
-        const _: () = {
-            $crate::impl_uniform_input_detail!(
-                $ty,
-                $this => { $($field: $type = $value, )* }
-            );
-
-            use glium::implement_vertex;
-            implement_vertex!(MyUniforms, $($field,)*);
-
-            impl<'u> $crate::shader::input::HasUniforms<'u> for MyUniforms {
-                type Uniforms = Self;
-            }
-
-            impl $crate::shader::ToUniforms for MyUniforms {
-                fn to_uniforms(&self) -> Self {
-                    self.clone()
-                }
-            }
-
-            impl $crate::shader::InstanceInput for $ty {
-                type Vertex = MyUniforms;
-
-                fn to_vertex(&self) -> Self::Vertex {
-                    $crate::shader::ToUniforms::to_uniforms(self)
-                }
-            }
-
-            ()
-        };
-    }
-}
-
-#[macro_export]
-macro_rules! impl_uniform_input_with_lifetime {
+    };
     (
         $ty:ident<$life:lifetime>,
         $this:ident => { $( $field:ident: $type:ty = $value:expr, )* } $(,)?
@@ -589,6 +550,44 @@ macro_rules! impl_uniform_input_with_lifetime {
             }
 
             impl<'a> $crate::shader::input::CompatibleWith<$ty<'static>> for $ty<'a> {
+            }
+
+            ()
+        };
+    }
+}
+
+#[macro_export]
+macro_rules! impl_instance_input {
+    (
+        $ty:ident,
+        $this:ident => { $( $field:ident: $type:ty = $value:expr, )* } $(,)?
+    ) => {
+        const _: () = {
+            $crate::impl_uniform_input_detail!(
+                $ty,
+                $this => { $($field: $type = $value, )* }
+            );
+
+            use glium::implement_vertex;
+            implement_vertex!(MyUniforms, $($field,)*);
+
+            impl<'u> $crate::shader::input::HasUniforms<'u> for MyUniforms {
+                type Uniforms = Self;
+            }
+
+            impl $crate::shader::ToUniforms for MyUniforms {
+                fn to_uniforms(&self) -> Self {
+                    self.clone()
+                }
+            }
+
+            impl $crate::shader::InstanceInput for $ty {
+                type Vertex = MyUniforms;
+
+                fn to_vertex(&self) -> Self::Vertex {
+                    $crate::shader::ToUniforms::to_uniforms(self)
+                }
             }
 
             ()
