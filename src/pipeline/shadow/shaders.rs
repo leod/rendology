@@ -69,7 +69,9 @@ pub fn render_shadowed_core_transform<P, I, V>(
 
             return current_depth > closest_depth ? SHADOW_VALUE : 1.0;
         }
-    ".to_string().replace("SHADOW_VALUE", &shadow_value.to_string());
+    "
+    .to_string()
+    .replace("SHADOW_VALUE", &shadow_value.to_string());
 
     let fragment = core
         .fragment
