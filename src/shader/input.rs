@@ -479,6 +479,8 @@ macro_rules! impl_uniform_input_detail {
                 ]
             }
         }
+
+        impl $crate::shader::input::CompatibleWith<$ty> for $ty {}
     }
 }
 
@@ -549,8 +551,7 @@ macro_rules! impl_uniform_input {
                 }
             }
 
-            impl<'a> $crate::shader::input::CompatibleWith<$ty<'static>> for $ty<'a> {
-            }
+            impl<'a> $crate::shader::input::CompatibleWith<$ty<'static>> for $ty<'a> {}
 
             ()
         };
