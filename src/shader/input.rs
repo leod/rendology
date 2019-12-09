@@ -9,7 +9,7 @@ pub trait HasUniforms<'u> {
 }
 
 pub trait ToUniforms: for<'u> HasUniforms<'u> {
-    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms;
+    fn to_uniforms(&self) -> <Self as HasUniforms<'_>>::Uniforms;
 }
 
 pub trait UniformInput: ToUniforms {
@@ -100,7 +100,7 @@ impl<'b, U> ToUniforms for &'b U
 where
     U: ToUniforms,
 {
-    fn to_uniforms<'u>(&'u self) -> <U as HasUniforms<'u>>::Uniforms {
+    fn to_uniforms(&self) -> <U as HasUniforms<'_>>::Uniforms {
         (*self).to_uniforms()
     }
 }
@@ -110,7 +110,7 @@ where
     U1: ToUniforms,
     U2: ToUniforms,
 {
-    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms {
+    fn to_uniforms(&self) -> <Self as HasUniforms<'_>>::Uniforms {
         UniformsPair(self.0.to_uniforms(), self.1.to_uniforms())
     }
 }
@@ -121,7 +121,7 @@ where
     U2: ToUniforms,
     U3: ToUniforms,
 {
-    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms {
+    fn to_uniforms(&self) -> <Self as HasUniforms<'_>>::Uniforms {
         UniformsPair(
             self.0.to_uniforms(),
             UniformsPair(self.1.to_uniforms(), self.2.to_uniforms()),
@@ -136,7 +136,7 @@ where
     U3: ToUniforms,
     U4: ToUniforms,
 {
-    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms {
+    fn to_uniforms(&self) -> <Self as HasUniforms<'_>>::Uniforms {
         UniformsPair(
             self.0.to_uniforms(),
             UniformsPair(
@@ -151,7 +151,7 @@ impl<U> ToUniforms for Option<U>
 where
     U: ToUniforms,
 {
-    fn to_uniforms<'u>(&'u self) -> <Self as HasUniforms<'u>>::Uniforms {
+    fn to_uniforms(&self) -> <Self as HasUniforms<'_>>::Uniforms {
         UniformsOption(self.as_ref().map(ToUniforms::to_uniforms))
     }
 }
