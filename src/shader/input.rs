@@ -428,7 +428,7 @@ macro_rules! plain_uniforms {
 macro_rules! impl_uniform_input_detail {
     (
         $ty:ident,
-        $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
+        $this:ident => { $( $field:ident: $type:ty = $value:expr, )* } $(,)?
     ) => {
         #[derive(Copy, Clone, Debug)]
         pub struct MyUniforms {
@@ -483,12 +483,12 @@ macro_rules! impl_uniform_input_detail {
 macro_rules! impl_uniform_input {
     (
         $ty:ident,
-        $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
+        $this:ident => { $( $field:ident: $type:ty = $value:expr, )* } $(,)?
     ) => {
         const _: () = {
             $crate::impl_uniform_input_detail!(
                 $ty,
-                $this => { $($field: $type => $value, )* }
+                $this => { $($field: $type = $value, )* }
             );
 
             ()
@@ -500,12 +500,12 @@ macro_rules! impl_uniform_input {
 macro_rules! impl_instance_input {
     (
         $ty:ident,
-        $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
+        $this:ident => { $( $field:ident: $type:ty = $value:expr, )* } $(,)?
     ) => {
         const _: () = {
             $crate::impl_uniform_input_detail!(
                 $ty,
-                $this => { $($field: $type => $value, )* }
+                $this => { $($field: $type = $value, )* }
             );
 
             use glium::implement_vertex;
@@ -538,7 +538,7 @@ macro_rules! impl_instance_input {
 macro_rules! impl_uniform_input_with_lifetime {
     (
         $ty:ident<$life:lifetime>,
-        $this:ident => { $( $field:ident: $type:ty => $value:expr, )* } $(,)?
+        $this:ident => { $( $field:ident: $type:ty = $value:expr, )* } $(,)?
     ) => {
         const _: () = {
             #[derive(Copy, Clone, Debug)]

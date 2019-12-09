@@ -21,8 +21,8 @@ impl Default for Instance {
 impl_instance_input!(
     Instance,
     self => {
-        instance_transform: [[f32; 4]; 4] => self.transform,
-        instance_color: [f32; 4] => self.color,
+        instance_transform: [[f32; 4]; 4] = self.transform,
+        instance_color: [f32; 4] = self.color,
     },
 );
 

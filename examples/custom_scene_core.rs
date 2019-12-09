@@ -29,15 +29,15 @@ mod my_scene {
     rendology::impl_uniform_input_with_lifetime!(
         Params<'a>,
         self => {
-            time: f32 => self.time,
-            my_texture: &'a glium::texture::CompressedSrgbTexture2d => self.texture,
+            time: f32 = self.time,
+            my_texture: &'a glium::texture::CompressedSrgbTexture2d = self.texture,
         },
     );
 
     rendology::impl_instance_input!(
         Instance,
         self => {
-            instance_transform: [[f32; 4]; 4] => self.transform,
+            instance_transform: [[f32; 4]; 4] = self.transform,
         },
     );
 
