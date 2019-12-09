@@ -22,17 +22,20 @@ pub use crate::CreationError;
 #[derive(Debug, Clone)]
 pub struct Config {
     pub shadow_map_size: na::Vector2<u32>,
+    pub shadow_value: f32,
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
             shadow_map_size: na::Vector2::new(4096, 4096),
+            shadow_value: 0.5,
         }
     }
 }
 
 pub struct ShadowMapping {
+    config: Config,
     shadow_texture: DepthTexture2d,
 }
 
@@ -73,7 +76,7 @@ impl ScenePassComponent for ShadowMapping {
         &self,
         core: shader::Core<(Context, P), I, V>,
     ) -> shader::Core<(Context, P), I, V> {
-        shaders::render_shadowed_core_transform(core)
+        shaders::render_shadowed_core_transform(self.config.shadow_value, core)
     }
 
     fn params(&self, context: &Context) -> ScenePassParams {
@@ -97,7 +100,10 @@ impl ShadowMapping {
 
         info!("Shadow mapping initialized");
 
-        Ok(ShadowMapping { shadow_texture })
+        Ok(ShadowMapping {
+            config: config.clone(),
+            shadow_texture,
+        })
     }
 
     fn light_projection(&self) -> na::Matrix4<f32> {
