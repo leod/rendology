@@ -16,7 +16,7 @@ pub use crate::CreationError;
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    num_blur_passes: usize,
+    pub num_blur_passes: usize,
 }
 
 impl Default for Config {
@@ -80,8 +80,8 @@ impl<'u> HasCompositionPassParams<'u> for Glow {
 impl CompositionPassComponent for Glow {
     fn core_transform(
         &self,
-        core: shader::Core<(), (), screen_quad::Vertex>,
-    ) -> shader::Core<(), (), screen_quad::Vertex> {
+        core: shader::Core<Context, (), screen_quad::Vertex>,
+    ) -> shader::Core<Context, (), screen_quad::Vertex> {
         shaders::composition_core_transform(core)
     }
 

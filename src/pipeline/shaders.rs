@@ -35,7 +35,7 @@ pub fn diffuse_scene_core_transform<P, I, V>(
     }
 }
 
-pub fn composition_core() -> shader::Core<(), (), screen_quad::Vertex> {
+pub fn composition_core<P>() -> shader::Core<P, (), screen_quad::Vertex> {
     let vertex = shader::VertexCore::empty()
         .with_out(shader::defs::v_tex_coord(), "tex_coord")
         .with_out_expr(shader::defs::V_POSITION, "position");
@@ -51,9 +51,9 @@ pub fn composition_core() -> shader::Core<(), (), screen_quad::Vertex> {
     shader::Core { vertex, fragment }
 }
 
-pub fn hdr_composition_core_transform(
-    core: shader::Core<(), (), screen_quad::Vertex>,
-) -> shader::Core<(), (), screen_quad::Vertex> {
+pub fn hdr_composition_core_transform<P>(
+    core: shader::Core<P, (), screen_quad::Vertex>,
+) -> shader::Core<P, (), screen_quad::Vertex> {
     assert!(
         core.fragment.has_out(shader::defs::F_COLOR),
         "FragmentCore needs F_COLOR output for HDR composition pass"
@@ -73,10 +73,10 @@ pub fn hdr_composition_core_transform(
     }
 }
 
-pub fn gamma_correction_composition_core_transform(
-    core: shader::Core<(), (), screen_quad::Vertex>,
+pub fn gamma_correction_composition_core_transform<P>(
+    core: shader::Core<P, (), screen_quad::Vertex>,
     gamma: f32,
-) -> shader::Core<(), (), screen_quad::Vertex> {
+) -> shader::Core<P, (), screen_quad::Vertex> {
     assert!(
         core.fragment.has_out(shader::defs::F_COLOR),
         "FragmentCore needs F_COLOR output for gamma correction composition pass"

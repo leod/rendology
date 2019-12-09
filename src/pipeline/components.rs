@@ -133,8 +133,11 @@ impl Components {
         })
     }
 
-    pub fn composition_core(&self, config: &Config) -> shader::Core<(), (), screen_quad::Vertex> {
-        let mut shader_core = shaders::composition_core();
+    pub fn composition_core(
+        &self,
+        config: &Config,
+    ) -> shader::Core<Context, (), screen_quad::Vertex> {
+        let mut shader_core = shaders::composition_core::<Context>();
 
         if let Some(deferred_shading) = self.deferred_shading.as_ref() {
             shader_core = CompositionPassComponent::core_transform(deferred_shading, shader_core);

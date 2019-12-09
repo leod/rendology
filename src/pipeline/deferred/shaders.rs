@@ -1,7 +1,7 @@
 use glium::uniforms::UniformType;
 
 use crate::pipeline::Light;
-use crate::{basic_obj, screen_quad, shader, Camera};
+use crate::{basic_obj, screen_quad, shader, Camera, Context};
 
 pub const F_WORLD_POS: &str = "f_world_pos";
 pub const F_WORLD_NORMAL: &str = "f_world_normal";
@@ -178,8 +178,8 @@ pub fn light_object_core() -> shader::Core<Camera, Light, basic_obj::Vertex> {
 
 /// Composition shader core transform for composing our buffers.
 pub fn composition_core_transform(
-    core: shader::Core<(), (), screen_quad::Vertex>,
-) -> shader::Core<(), (), screen_quad::Vertex> {
+    core: shader::Core<Context, (), screen_quad::Vertex>,
+) -> shader::Core<Context, (), screen_quad::Vertex> {
     assert!(
         core.fragment.has_in(shader::defs::V_TEX_COORD),
         "FragmentCore needs V_TEX_COORD input for deferred shading composition pass"
@@ -190,7 +190,7 @@ pub fn composition_core_transform(
     );
 
     let light_expr = "texture(light_texture, v_tex_coord).rgb";
-    let ambient_expr = "vec3(0.3, 0.3, 0.3)";
+    let ambient_expr = "context_ambient_light";
 
     let fragment = core
         .fragment

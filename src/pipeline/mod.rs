@@ -85,7 +85,7 @@ impl Pipeline {
             .map(|config| fxaa::FXAA::create(facade, config))
             .transpose()
             .map_err(CreationError::FXAA)?;
-        let copy_texture_program = shaders::composition_core()
+        let copy_texture_program = shaders::composition_core::<()>()
             .build_program(facade, shader::InstancingMode::Uniforms)
             .map_err(crate::CreationError::from)?;
 
@@ -371,7 +371,12 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
                 .as_ref()
                 .map(|c| CompositionPassComponent::params(c));
 
-            let uniforms = (&color_uniform, &deferred_shading_uniforms, &glow_uniforms);
+            let uniforms = (
+                &color_uniform,
+                &deferred_shading_uniforms,
+                &glow_uniforms,
+                &self.0.context,
+            );
 
             target_buffer.draw(
                 &pipeline.screen_quad.vertex_buffer,
