@@ -5,6 +5,7 @@ mod camera;
 mod drawable;
 mod error;
 mod instancing;
+mod line;
 mod mesh;
 mod render_list;
 mod scene;

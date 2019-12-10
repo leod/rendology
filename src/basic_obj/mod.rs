@@ -3,7 +3,7 @@ mod scene;
 
 use std::ops::{Index, IndexMut};
 
-use glium::{self, implement_vertex};
+use glium::implement_vertex;
 use num_traits::{FromPrimitive, ToPrimitive};
 
 use crate::shader::{InstanceInput, InstancingMode, ToUniforms};
