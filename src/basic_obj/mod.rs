@@ -81,6 +81,10 @@ impl<I: InstanceInput> RenderList<I> {
             list.clear();
         }
     }
+
+    pub fn as_drawable<'a>(&'a self, resources: &'a Resources) -> impl Drawable<I, Vertex> + 'a {
+        RenderListDrawableImpl(self, resources)
+    }
 }
 
 impl<I: InstanceInput + Clone> Default for RenderList<I> {
@@ -130,14 +134,43 @@ impl<I: InstanceInput> Instancing<I> {
     }
 
     pub fn as_drawable<'a>(&'a self, resources: &'a Resources) -> impl Drawable<I, Vertex> + 'a {
-        DrawableImpl(self, resources)
+        InstancingDrawableImpl(self, resources)
     }
 }
 
-struct DrawableImpl<'a, I: InstanceInput>(&'a Instancing<I>, &'a Resources);
+struct InstancingDrawableImpl<'a, I: InstanceInput>(&'a Instancing<I>, &'a Resources);
 
-impl<'a, I: InstanceInput> Drawable<I, Vertex> for DrawableImpl<'a, I> {
+impl<'a, I: InstanceInput> Drawable<I, Vertex> for InstancingDrawableImpl<'a, I> {
     const INSTANCING_MODE: InstancingMode = InstancingMode::Vertex;
+
+    fn draw<U, S>(
+        &self,
+        program: &glium::Program,
+        uniforms: &U,
+        draw_params: &glium::DrawParameters,
+        target: &mut S,
+    ) -> Result<(), DrawError>
+    where
+        U: ToUniforms,
+        S: glium::Surface,
+    {
+        for i in 0..NUM_TYPES {
+            (self.0).0[i].as_drawable(&self.1.meshes[i]).draw(
+                program,
+                uniforms,
+                draw_params,
+                target,
+            )?;
+        }
+
+        Ok(())
+    }
+}
+
+struct RenderListDrawableImpl<'a, I: InstanceInput>(&'a RenderList<I>, &'a Resources);
+
+impl<'a, I: InstanceInput> Drawable<I, Vertex> for RenderListDrawableImpl<'a, I> {
+    const INSTANCING_MODE: InstancingMode = InstancingMode::Uniforms;
 
     fn draw<U, S>(
         &self,
