@@ -84,6 +84,13 @@ pub fn create_line_x_mesh<F: glium::backend::Facade>(
     )
 }
 
+fn v_normal() -> shader::VertexOutDef {
+    (
+        ("v_normal".into(), glium::uniforms::UniformType::FloatVec2),
+        shader::VertexOutQualifier::Smooth,
+    )
+}
+
 const BODY: &str = "
     vec2 aspect_vec = vec2(context_camera_viewport_size.x / context_camera_viewport_size.y, 1.0);
     mat4 transform = context_camera_projection * context_camera_view * instance_transform;
@@ -129,6 +136,7 @@ impl SceneCore for Core {
         let vertex = shader::VertexCore::empty()
             .with_body(BODY)
             .with_out(shader::defs::v_color(), "instance_color")
+            .with_out(v_normal(), "line_normal")
             .with_out_expr(
                 shader::defs::V_POSITION,
                 "curr_projected + vec4(line_offset, 0.0, 0.0)",
@@ -136,7 +144,11 @@ impl SceneCore for Core {
 
         let fragment = shader::FragmentCore::empty()
             .with_in_def(shader::defs::v_color())
-            .with_out(shader::defs::f_color(), "v_color");
+            .with_in_def(v_normal())
+            .with_out(
+                shader::defs::f_color(),
+                "vec4(v_color.rgb, v_color.a * (1.0 - length(v_normal)))",
+            );
 
         shader::Core { vertex, fragment }
     }
