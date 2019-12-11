@@ -100,6 +100,7 @@ impl Pipeline {
                 &draw_params,
             )?
             .compose(&scene.lights)?
+            .postprocess()?
             .plain_scene_pass()
             .draw(
                 &self.line_pass,
@@ -125,11 +126,7 @@ fn main() {
     };
 
     // Initialize rendology pipeline
-    let config = rendology::Config {
-        fxaa: None,
-        ..Default::default()
-    };
-    let mut pipeline = Pipeline::create(&display, &config).unwrap();
+    let mut pipeline = Pipeline::create(&display, &Default::default()).unwrap();
 
     let start_time = Instant::now();
     let mut quit = false;
