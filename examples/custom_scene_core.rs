@@ -221,6 +221,7 @@ impl Pipeline {
                 &Default::default(),
             )?
             .compose(&scene.lights)?
+            .postprocess()?
             .present()
     }
 }

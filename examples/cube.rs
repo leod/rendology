@@ -90,6 +90,7 @@ impl Pipeline {
                 &draw_params,
             )?
             .compose(&scene.lights)?
+            .postprocess()?
             .present()
     }
 }
