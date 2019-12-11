@@ -189,16 +189,24 @@ pub fn composition_core_transform(
         "FragmentCore needs F_COLOR output for deferred shading composition pass"
     );
 
-    let light_expr = "texture(light_texture, v_tex_coord).rgb";
-    let ambient_expr = "context_ambient_light";
-
     let fragment = core
         .fragment
         .with_extra_uniform("light_texture", UniformType::Sampler2d)
-        .with_out_expr(
-            shader::defs::F_COLOR,
-            &format!("f_color * vec4({} + {}, 1.0)", light_expr, ambient_expr),
-        );
+        .with_extra_uniform("normal_texture", UniformType::Sampler2d)
+        .with_body(
+            "
+            vec4 light_value = texture(light_texture, v_tex_coord);
+            vec4 normal_value = texture(normal_texture, v_tex_coord);
+
+            vec4 lighting = vec4(light_value.rgb + context_ambient_light, 1.0);
+
+            // Keep background color as-is.
+            // TODO: There are definitely more efficient ways to do this,
+            // without having to read the normal texture.
+            lighting += step(0.001, 1.0 - length(normal_value.rgb)) * vec4(1.0, 1.0, 1.0, 0.0);
+            ",
+        )
+        .with_out_expr(shader::defs::F_COLOR, "f_color * lighting");
 
     shader::Core {
         vertex: core.vertex,
