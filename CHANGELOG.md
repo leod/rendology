@@ -1,4 +1,7 @@
 # Changelog
+## Version 0.4.0
+- `Pipeline::start_frame` now takes the clear color ([#6](https://github.com/leod/rendology/pull/6))
+
 ## Version 0.3.0 (2019-12-10)
 - Allow passing draw parameters to shadow pass ([#3](https://github.com/leod/rendology/pull/3))
 - Overhaul `ToUniforms` to allow lifetimes ([#3](https://github.com/leod/rendology/pull/3))
