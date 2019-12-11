@@ -74,7 +74,7 @@ impl Pipeline {
         };
 
         self.rendology
-            .start_frame(facade, context.clone(), target)?
+            .start_frame(facade, (0.0, 0.0, 0.0), context.clone(), target)?
             .shadow_pass()
             .draw(
                 &self.shadow_pass,
