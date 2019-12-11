@@ -10,7 +10,11 @@ mod components;
 use coarse_prof::profile;
 use log::info;
 
-use glium::{uniform, Surface};
+use glium::framebuffer::{MultiOutputFrameBuffer, SimpleFrameBuffer};
+use glium::texture::{
+    DepthFormat, DepthTexture2d, MipmapsOption, Texture2d, UncompressedFloatFormat,
+};
+use glium::{uniform, Program, Surface};
 
 use crate::fxaa::{self, FXAA};
 use crate::scene::SceneCore;
@@ -27,12 +31,12 @@ pub struct Pipeline {
     components: Components,
 
     target_size: (u32, u32),
-    scene_color_texture: glium::texture::Texture2d,
-    scene_depth_texture: glium::texture::DepthTexture2d,
-    composition_texture: glium::texture::Texture2d,
+    scene_color_texture: Texture2d,
+    scene_depth_texture: DepthTexture2d,
+    composition_texture: Texture2d,
 
-    composition_program: glium::Program,
-    copy_texture_program: glium::Program,
+    composition_program: Program,
+    copy_texture_program: Program,
 
     fxaa: Option<FXAA>,
 
@@ -156,7 +160,7 @@ impl Pipeline {
         })
     }
 
-    pub fn start_frame<'a, F: glium::backend::Facade, S: glium::Surface>(
+    pub fn start_frame<'a, F: glium::backend::Facade, S: Surface>(
         &'a mut self,
         facade: &'a F,
         clear_color: (f32, f32, f32),
@@ -176,7 +180,7 @@ impl Pipeline {
             self.target_size = target.get_dimensions();
         }
 
-        let mut framebuffer = glium::framebuffer::SimpleFrameBuffer::with_depth_buffer(
+        let mut framebuffer = SimpleFrameBuffer::with_depth_buffer(
             facade,
             &self.scene_color_texture,
             &self.scene_depth_texture,
@@ -211,11 +215,11 @@ impl Pipeline {
     fn create_color_texture<F: glium::backend::Facade>(
         facade: &F,
         size: (u32, u32),
-    ) -> Result<glium::texture::Texture2d, crate::CreationError> {
-        Ok(glium::texture::Texture2d::empty_with_format(
+    ) -> Result<Texture2d, crate::CreationError> {
+        Ok(Texture2d::empty_with_format(
             facade,
-            glium::texture::UncompressedFloatFormat::F32F32F32F32,
-            glium::texture::MipmapsOption::NoMipmap,
+            UncompressedFloatFormat::F32F32F32F32,
+            MipmapsOption::NoMipmap,
             size.0,
             size.1,
         )?)
@@ -224,11 +228,11 @@ impl Pipeline {
     fn create_depth_texture<F: glium::backend::Facade>(
         facade: &F,
         size: (u32, u32),
-    ) -> Result<glium::texture::DepthTexture2d, crate::CreationError> {
-        Ok(glium::texture::DepthTexture2d::empty_with_format(
+    ) -> Result<DepthTexture2d, crate::CreationError> {
+        Ok(DepthTexture2d::empty_with_format(
             facade,
-            glium::texture::DepthFormat::F32,
-            glium::texture::MipmapsOption::NoMipmap,
+            DepthFormat::F32,
+            MipmapsOption::NoMipmap,
             size.0,
             size.1,
         )?)
@@ -307,7 +311,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
             .shaded_scene_pass_output_textures(&pass.setup);
         output_textures.push((shader::defs::F_COLOR, &pipeline.scene_color_texture));
 
-        let mut framebuffer = glium::framebuffer::MultiOutputFrameBuffer::with_depth_buffer(
+        let mut framebuffer = MultiOutputFrameBuffer::with_depth_buffer(
             self.0.facade,
             output_textures.into_iter(),
             &pipeline.scene_depth_texture,
@@ -355,10 +359,8 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
         {
             profile!("composition_pass");
 
-            let mut target_buffer = glium::framebuffer::SimpleFrameBuffer::new(
-                self.0.facade,
-                &pipeline.composition_texture,
-            )?;
+            let mut target_buffer =
+                SimpleFrameBuffer::new(self.0.facade, &pipeline.composition_texture)?;
 
             let color_uniform = uniform! {
                 color_texture: &pipeline.scene_color_texture,
