@@ -100,12 +100,14 @@ impl ScenePassComponent for DeferredShading {
 
 pub struct CompositionPassParams<'a> {
     light_texture: &'a Texture2d,
+    normal_texture: &'a Texture2d,
 }
 
 impl_uniform_input!(
     CompositionPassParams<'a>,
     self => {
         light_texture: &'a Texture2d = self.light_texture,
+        normal_texture: &'a Texture2d = self.normal_texture,
     },
 );
 
@@ -124,6 +126,7 @@ impl CompositionPassComponent for DeferredShading {
     fn params(&self) -> CompositionPassParams {
         CompositionPassParams {
             light_texture: &self.light_texture,
+            normal_texture: &self.scene_textures[1],
         }
     }
 }

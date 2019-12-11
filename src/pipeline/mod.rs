@@ -159,6 +159,7 @@ impl Pipeline {
     pub fn start_frame<'a, F: glium::backend::Facade, S: glium::Surface>(
         &'a mut self,
         facade: &'a F,
+        clear_color: (f32, f32, f32),
         context: Context,
         target: &'a mut S,
     ) -> Result<StartFrameStep<'a, F, S>, DrawError> {
@@ -180,7 +181,7 @@ impl Pipeline {
             &self.scene_color_texture,
             &self.scene_depth_texture,
         )?;
-        framebuffer.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
+        framebuffer.clear_color_and_depth((clear_color.0, clear_color.1, clear_color.2, 1.0), 1.0);
 
         self.components.clear_buffers(facade)?;
 
