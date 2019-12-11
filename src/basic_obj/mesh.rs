@@ -22,14 +22,7 @@ pub fn mesh_from_slices<F: glium::backend::Facade>(
         })
         .collect::<Vec<_>>();
 
-    Ok(Mesh {
-        vertex_buffer: glium::VertexBuffer::new(facade, &vertices)?,
-        index_buffer: IndexBuffer::IndexBuffer(glium::IndexBuffer::new(
-            facade,
-            primitive_type,
-            indices,
-        )?),
-    })
+    Mesh::create_with_indices(facade, primitive_type, &vertices, indices)
 }
 
 pub fn load_wavefront<F: glium::backend::Facade>(
