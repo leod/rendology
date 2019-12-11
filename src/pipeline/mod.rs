@@ -250,7 +250,7 @@ impl Pipeline {
     }
 }
 
-impl<'a, F, S> StartFrameStep<'a, F, S> {
+impl<'a, F: glium::backend::Facade, S> StartFrameStep<'a, F, S> {
     pub fn shadow_pass(self) -> ShadowPassStep<'a, F, S> {
         ShadowPassStep(self.0)
     }
@@ -259,9 +259,22 @@ impl<'a, F, S> StartFrameStep<'a, F, S> {
         ShadedScenePassStep(self.0)
     }
 
-    pub fn plain_scene_pass(self) -> PlainScenePassStep<'a, F, S> {
-        // FIXME: Need to blit scene_color_texture to composition_texture
-        PlainScenePassStep(self.0)
+    pub fn plain_scene_pass(self) -> Result<PlainScenePassStep<'a, F, S>, DrawError> {
+        let mut framebuffer =
+            SimpleFrameBuffer::new(self.0.facade, &self.0.pipeline.composition_texture)?;
+
+        // TODO: Use blitting instead
+        framebuffer.draw(
+            &self.0.pipeline.screen_quad.vertex_buffer,
+            &self.0.pipeline.screen_quad.index_buffer,
+            &self.0.pipeline.copy_texture_program,
+            &uniform! {
+                color_texture: &self.0.pipeline.scene_color_texture,
+            },
+            &Default::default(),
+        )?;
+
+        Ok(PlainScenePassStep(self.0))
     }
 }
 
