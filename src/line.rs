@@ -19,6 +19,18 @@ use glium::implement_vertex;
 use crate::{shader, Context, CreationError, Mesh, SceneCore};
 
 #[derive(Clone, Debug)]
+pub struct Params {
+    pub feather: f32,
+}
+
+impl_uniform_input!(
+    Params,
+    self => {
+        params_feather: f32 = self.feather,
+    },
+);
+
+#[derive(Clone, Debug)]
 pub struct Instance {
     pub transform: na::Matrix4<f32>,
     pub color: na::Vector4<f32>,
@@ -44,9 +56,30 @@ pub struct Point {
 
 implement_vertex!(Point, prev_pos, curr_pos, next_pos, orientation);
 
-pub fn create_line_x_mesh<F: glium::backend::Facade>(
-    facade: &F,
-) -> Result<Mesh<Point>, CreationError> {
+impl Instance {
+    pub fn from_start_end(
+        start: &na::Point3<f32>,
+        end: &na::Point3<f32>,
+        color: &na::Vector4<f32>,
+        thickness: f32,
+    ) -> Self {
+        let delta = end - start;
+        let transform = na::Matrix4::from_columns(&[
+            na::Vector4::new(delta.x, delta.y, delta.z, 0.0),
+            na::Vector4::zeros(),
+            na::Vector4::zeros(),
+            na::Vector4::new(start.x, start.y, start.z, 1.0),
+        ]);
+
+        Self {
+            transform,
+            color: *color,
+            thickness,
+        }
+    }
+}
+
+pub fn create_mesh<F: glium::backend::Facade>(facade: &F) -> Result<Mesh<Point>, CreationError> {
     let points = vec![
         Point {
             prev_pos: [0.0, 0.0, 0.0],
@@ -91,7 +124,7 @@ fn v_normal() -> shader::VertexOutDef {
     )
 }
 
-const BODY: &str = "
+const VERTEX_BODY: &str = "
     vec2 aspect_vec = vec2(context_camera_viewport_size.x / context_camera_viewport_size.y, 1.0);
     mat4 transform = context_camera_projection * context_camera_view * instance_transform;
 
@@ -128,13 +161,13 @@ const BODY: &str = "
 pub struct Core;
 
 impl SceneCore for Core {
-    type Params = ();
+    type Params = Params;
     type Instance = Instance;
     type Vertex = Point;
 
-    fn scene_core(&self) -> shader::Core<(Context, ()), Instance, Point> {
+    fn scene_core(&self) -> shader::Core<(Context, Params), Instance, Point> {
         let vertex = shader::VertexCore::empty()
-            .with_body(BODY)
+            .with_body(VERTEX_BODY)
             .with_out(shader::defs::v_color(), "instance_color")
             .with_out(v_normal(), "line_normal")
             .with_out_expr(
@@ -145,9 +178,18 @@ impl SceneCore for Core {
         let fragment = shader::FragmentCore::empty()
             .with_in_def(shader::defs::v_color())
             .with_in_def(v_normal())
+            .with_body(
+                "
+                float distance_from_center = length(v_normal);
+                float alpha = 1.0 - 
+                    step(1.0 - params_feather, distance_from_center)
+                    * (distance_from_center - (1.0 - params_feather))
+                    / params_feather;
+                ",
+            )
             .with_out(
                 shader::defs::f_color(),
-                "vec4(v_color.rgb, v_color.a * (1.0 - length(v_normal)))",
+                "vec4(v_color.rgb, v_color.a * alpha)",
             );
 
         shader::Core { vertex, fragment }
