@@ -38,7 +38,7 @@ pub fn diffuse_scene_core_transform<P, I, V>(
 pub fn composition_core<P>() -> shader::Core<P, (), screen_quad::Vertex> {
     let vertex = shader::VertexCore::empty()
         .with_out(shader::defs::v_tex_coord(), "tex_coord")
-        .with_out_expr(shader::defs::V_POSITION, "position");
+        .with_out_expr(shader::defs::V_POS, "position");
 
     let fragment = shader::FragmentCore::empty()
         .with_extra_uniform("color_texture", UniformType::Sampler2d)

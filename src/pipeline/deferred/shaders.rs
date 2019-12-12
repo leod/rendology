@@ -140,7 +140,7 @@ pub fn main_light_screen_quad_core(
         .with_out(v_light_pos(), "light_position")
         .with_out(v_light_color(), "light_color")
         .with_out(v_light_attenuation(), "light_attenuation")
-        .with_out_expr(shader::defs::V_POSITION, "position");
+        .with_out_expr(shader::defs::V_POS, "position");
 
     let mut fragment = light_fragment_core();
     if have_shadows {
@@ -162,7 +162,7 @@ pub fn light_object_core() -> shader::Core<Camera, Light, basic_obj::Vertex> {
         .with_out(v_light_color(), "light_color")
         .with_out(v_light_attenuation(), "light_attenuation")
         .with_out_expr(
-            shader::defs::V_POSITION,
+            shader::defs::V_POS,
             "
                 camera_projection
                 * camera_view
