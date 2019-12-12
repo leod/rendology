@@ -4,6 +4,7 @@ pub mod defs;
 
 use log::info;
 
+use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use glsl::parser::Parse;
@@ -31,14 +32,18 @@ pub enum FragmentOutQualifier {
 pub type VariableName = String;
 pub type GLSL = String;
 
-pub type VariableDef = (VariableName, UniformType);
-pub type VertexOutDef = (VariableDef, VertexOutQualifier);
-pub type FragmentOutDef = (VariableDef, FragmentOutQualifier);
+pub type Type = UniformType;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VertexOutDef(pub UniformType, pub VertexOutQualifier);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FragmentOutDef(pub UniformType, pub FragmentOutQualifier);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VertexCore<P, I, V> {
-    pub extra_uniforms: Vec<VariableDef>,
-    pub out_defs: Vec<VertexOutDef>,
+    pub extra_uniforms: BTreeMap<VariableName, UniformType>,
+    pub out_defs: BTreeMap<VariableName, VertexOutDef>,
     pub defs: GLSL,
     pub body: GLSL,
     pub out_exprs: Vec<(VariableName, GLSL)>,
@@ -47,11 +52,11 @@ pub struct VertexCore<P, I, V> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FragmentCore<P> {
-    pub extra_uniforms: Vec<VariableDef>,
-    pub in_defs: Vec<VertexOutDef>,
-    pub out_defs: Vec<FragmentOutDef>,
-    pub defs: String,
-    pub body: String,
+    pub extra_uniforms: BTreeMap<VariableName, UniformType>,
+    pub in_defs: BTreeMap<VariableName, VertexOutDef>,
+    pub out_defs: BTreeMap<VariableName, FragmentOutDef>,
+    pub defs: GLSL,
+    pub body: GLSL,
     pub out_exprs: Vec<(VariableName, GLSL)>,
     pub phantom: PhantomData<P>,
 }
@@ -77,8 +82,8 @@ pub enum InstancingMode {
 impl<P, I, V> Default for VertexCore<P, I, V> {
     fn default() -> Self {
         Self {
-            extra_uniforms: Vec::new(),
-            out_defs: Vec::new(),
+            extra_uniforms: BTreeMap::new(),
+            out_defs: BTreeMap::new(),
             defs: "".into(),
             body: "".into(),
             out_exprs: Vec::new(),
@@ -90,9 +95,9 @@ impl<P, I, V> Default for VertexCore<P, I, V> {
 impl<P> Default for FragmentCore<P> {
     fn default() -> Self {
         Self {
-            extra_uniforms: Vec::new(),
-            in_defs: Vec::new(),
-            out_defs: Vec::new(),
+            extra_uniforms: BTreeMap::new(),
+            in_defs: BTreeMap::new(),
+            out_defs: BTreeMap::new(),
             defs: "".into(),
             body: "".into(),
             out_exprs: Vec::new(),
@@ -107,23 +112,17 @@ impl<P, I, V> VertexCore<P, I, V> {
     }
 
     pub fn has_out(&self, name: &str) -> bool {
-        self.out_defs
-            .iter()
-            .filter(|((n, _t), _q)| n == name)
-            .count()
-            > 0
+        self.out_defs.contains_key(name)
     }
 
-    pub fn get_out_exprs<'a>(&'a self, name: &'a str) -> impl Iterator<Item = &'a GLSL> {
-        self.out_exprs
-            .iter()
-            .filter(move |(n, _expr)| n == name)
-            .map(|(_n, expr)| expr)
+    pub fn has_out_def(&self, (name, def): (&str, VertexOutDef)) -> bool {
+        self.out_defs
+            .get(name)
+            .map_or(false, |given_def| given_def.0 == def.0)
     }
 
     pub fn with_extra_uniform(mut self, name: &str, t: UniformType) -> Self {
-        // TODO: Check for duplicates
-        self.extra_uniforms.push((name.into(), t));
+        self.extra_uniforms.insert(name.into(), t);
         self
     }
 
@@ -137,21 +136,26 @@ impl<P, I, V> VertexCore<P, I, V> {
         self
     }
 
-    pub fn with_out(mut self, def: VertexOutDef, expr: &str) -> Self {
-        assert!(self.get_out_exprs(&(def.0).0).count() == 0);
+    pub fn with_out(mut self, (name, def): (&str, VertexOutDef), expr: &str) -> Self {
+        assert!(!self.has_out(name));
 
-        self.out_exprs.push(((def.0).0.clone(), expr.into()));
-        self.out_defs.push(def);
-        self
-    }
+        if name != defs::V_POS.0 {
+            // Special case: gl_Position does not need to be defined
+            self.out_defs.insert(name.into(), def);
+        }
 
-    pub fn with_out_expr(mut self, name: &str, expr: &str) -> Self {
         self.out_exprs.push((name.into(), expr.into()));
         self
     }
 
-    pub fn with_out_def(mut self, def: VertexOutDef) -> Self {
-        self.out_defs.push(def);
+    pub fn with_out_expr(mut self, name: &str, expr: &str) -> Self {
+        assert!(self.has_out(name));
+        self.out_exprs.push((name.into(), expr.into()));
+        self
+    }
+
+    pub fn with_out_def(mut self, (name, def): (&str, VertexOutDef)) -> Self {
+        self.out_defs.insert(name.into(), def);
         self
     }
 }
@@ -161,63 +165,28 @@ impl<P> FragmentCore<P> {
         Default::default()
     }
 
-    pub fn get_in_def(&self, name: &str) -> Option<&VertexOutDef> {
-        self.in_defs.iter().find(|((n, _t), _q)| n == name)
-    }
-
     pub fn has_in(&self, name: &str) -> bool {
-        self.get_in_def(name).is_some()
+        self.in_defs.contains_key(name)
     }
 
     pub fn has_out(&self, name: &str) -> bool {
-        self.out_defs
-            .iter()
-            .filter(|((n, _t), _q)| n == name)
-            .count()
-            > 0
+        self.out_defs.contains_key(name)
     }
 
-    pub fn get_out_exprs<'a>(&'a self, name: &'a str) -> impl Iterator<Item = &'a GLSL> {
-        self.out_exprs
-            .iter()
-            .filter(move |(n, _expr)| n == name)
-            .map(|(_n, expr)| expr)
+    pub fn has_in_def(&self, (name, def): (&str, VertexOutDef)) -> bool {
+        self.in_defs
+            .get(name)
+            .map_or(false, |given_def| given_def.0 == def.0)
+    }
+
+    pub fn has_out_def(&self, (name, def): (&str, FragmentOutDef)) -> bool {
+        self.out_defs
+            .get(name)
+            .map_or(false, |given_def| given_def.0 == def.0)
     }
 
     pub fn with_extra_uniform(mut self, name: &str, t: UniformType) -> Self {
-        // TODO: Check for duplicates
-        self.extra_uniforms.push((name.into(), t));
-        self
-    }
-
-    pub fn with_in_def(mut self, ((name, t), q): VertexOutDef) -> Self {
-        match self.get_in_def(&name) {
-            Some(((_, cur_t), _cur_q)) if *cur_t != t => panic!(
-                "FragmentCore already has input `{}', but with type {:?} instead of {:?}",
-                name, cur_t, t
-            ),
-            Some(((_, _cur_t), cur_q)) if *cur_q != q => panic!(
-                "FragmentCore already has input `{}', but with qualifier {:?} instead of {:?}",
-                name, cur_q, q
-            ),
-            Some(_) => self,
-            None => {
-                self.in_defs.push(((name, t), q));
-                self
-            }
-        }
-    }
-
-    pub fn with_out(mut self, def: FragmentOutDef, expr: &str) -> Self {
-        assert!(self.get_out_exprs(&(def.0).0).count() == 0);
-
-        self.out_exprs.push(((def.0).0.clone(), expr.into()));
-        self.out_defs.push(def);
-        self
-    }
-
-    pub fn with_out_expr(mut self, name: &str, expr: &str) -> Self {
-        self.out_exprs.push((name.into(), expr.into()));
+        self.extra_uniforms.insert(name.into(), t);
         self
     }
 
@@ -228,6 +197,30 @@ impl<P> FragmentCore<P> {
 
     pub fn with_body(mut self, body: &str) -> Self {
         self.body += body;
+        self
+    }
+
+    pub fn with_in_def(mut self, (name, def): (&str, VertexOutDef)) -> Self {
+        self.in_defs.insert(name.into(), def);
+        self
+    }
+
+    pub fn with_out(mut self, (name, def): (&str, FragmentOutDef), expr: &str) -> Self {
+        assert!(!self.has_out(name));
+
+        self.out_defs.insert(name.into(), def);
+        self.out_exprs.push((name.into(), expr.into()));
+        self
+    }
+
+    pub fn with_out_expr(mut self, name: &str, expr: &str) -> Self {
+        assert!(self.has_out(name));
+        self.out_exprs.push((name.into(), expr.into()));
+        self
+    }
+
+    pub fn with_out_def(mut self, (name, def): (&str, FragmentOutDef)) -> Self {
+        self.out_defs.insert(name.into(), def);
         self
     }
 }
@@ -297,8 +290,9 @@ where
         // Remove unused inputs from fragment shader.
         fragment.in_defs = fragment
             .in_defs
-            .iter()
-            .filter(|((in_name, _), _q)| {
+            .clone()
+            .into_iter()
+            .filter(|(in_name, _)| {
                 let r = does_core_use_variable(
                     &fragment.defs,
                     &fragment.body,
@@ -312,14 +306,13 @@ where
 
                 r
             })
-            .cloned()
             .collect();
 
         // Demote vertex shader outputs to local when not needed by fragment
         // shader.
         let mut vertex = self.vertex.clone();
 
-        for ((out_name, _), q) in vertex.out_defs.iter_mut() {
+        for (out_name, VertexOutDef(_, q)) in vertex.out_defs.iter_mut() {
             if !fragment.has_in(&out_name) {
                 info!("Demoting vertex output {} to local", out_name);
 
@@ -336,7 +329,7 @@ where
         while changed {
             changed = false;
 
-            for ((out_name, _), q) in vertex.out_defs.clone().iter() {
+            for (out_name, VertexOutDef(_, q)) in vertex.out_defs.clone().iter() {
                 if *q == VertexOutQualifier::Local {
                     let is_used = does_core_use_variable(
                         &vertex.defs,
@@ -348,7 +341,7 @@ where
                     if !is_used {
                         info!("Removing vertex output {}", out_name);
 
-                        vertex.out_defs.retain(|((name, _), _)| name != out_name);
+                        vertex.out_defs.remove(out_name);
                         vertex.out_exprs.retain(|(name, _)| name != out_name);
 
                         changed = true;
@@ -431,69 +424,71 @@ pub struct BuildError {
     pub error: glium::program::ProgramCreationError,
 }
 
-fn compile_uniform_type(t: UniformType) -> &'static str {
+fn compile_type(t: Type) -> &'static str {
     match t {
-        UniformType::Float => "float",
-        UniformType::FloatVec2 => "vec2",
-        UniformType::FloatVec3 => "vec3",
-        UniformType::FloatVec4 => "vec4",
-        UniformType::FloatMat2 => "mat2",
-        UniformType::FloatMat3 => "mat3",
-        UniformType::FloatMat4 => "mat4",
-        UniformType::Int => "int",
-        UniformType::IntVec2 => "ivec2",
-        UniformType::IntVec3 => "ivec3",
-        UniformType::IntVec4 => "ivec4",
-        UniformType::Sampler2d => "sampler2D",
-        UniformType::Bool => "bool",
-        _ => unimplemented!("Given UniformType not yet supported: {:?}", t),
+        Type::Float => "float",
+        Type::FloatVec2 => "vec2",
+        Type::FloatVec3 => "vec3",
+        Type::FloatVec4 => "vec4",
+        Type::FloatMat2 => "mat2",
+        Type::FloatMat3 => "mat3",
+        Type::FloatMat4 => "mat4",
+        Type::Int => "int",
+        Type::IntVec2 => "ivec2",
+        Type::IntVec3 => "ivec3",
+        Type::IntVec4 => "ivec4",
+        Type::Sampler2d => "sampler2D",
+        Type::Bool => "bool",
+        _ => unimplemented!("Given Type not yet supported: {:?}", t),
     }
 }
 
-fn compile_variable_def(prefix: &str, (name, t): &VariableDef) -> String {
-    prefix.to_string() + " " + &compile_uniform_type(*t).to_string() + " " + name + ";\n"
+fn compile_variable_def(prefix: &str, name: &str, t: Type) -> String {
+    format!("{} {} {};\n", prefix, compile_type(t), name,)
 }
 
-fn compile_variable_defs(prefix: &str, defs: impl Iterator<Item = VariableDef>) -> String {
-    defs.map(|def| compile_variable_def(prefix, &def))
+fn compile_variable_defs<I>(prefix: &str, defs: I) -> String
+where
+    I: Iterator<Item = (String, Type)>,
+{
+    defs.map(|(name, t)| compile_variable_def(prefix, &name, t))
         .collect::<Vec<_>>()
         .join("")
 }
 
-fn compile_vertex_out_def(non_local_prefix: &str, ((name, t), q): &VertexOutDef) -> String {
-    let prefix = match q {
-        VertexOutQualifier::Flat => "flat ".to_string() + non_local_prefix,
-        VertexOutQualifier::Smooth => "smooth ".to_string() + non_local_prefix,
-        VertexOutQualifier::Local => "".to_string(),
-    };
-
-    compile_variable_def(&prefix, &(name.to_string(), *t))
-}
-
-fn compile_vertex_out_defs(prefix: &str, defs: &[VertexOutDef]) -> String {
+fn compile_vertex_out_defs(
+    in_out_prefix: &str,
+    defs: &BTreeMap<VariableName, VertexOutDef>,
+) -> String {
     defs.iter()
-        .map(|def| compile_vertex_out_def(prefix, def))
+        .map(|(name, VertexOutDef(t, q))| {
+            let prefix = match q {
+                VertexOutQualifier::Flat => "flat ".to_string() + in_out_prefix,
+                VertexOutQualifier::Smooth => "smooth ".to_string() + in_out_prefix,
+                VertexOutQualifier::Local => "".to_string(),
+            };
+
+            compile_variable_def(&prefix, name, *t)
+        })
         .collect::<Vec<_>>()
         .join("")
 }
 
-fn compile_fragment_out_def(((name, t), q): &FragmentOutDef) -> String {
-    let prefix = match q {
-        FragmentOutQualifier::Local => "".to_string(),
-        FragmentOutQualifier::Yield => "out ".to_string(),
-    };
-
-    compile_variable_def(&prefix, &(name.to_string(), *t))
-}
-
-fn compile_fragment_out_defs(defs: &[FragmentOutDef]) -> String {
+fn compile_fragment_out_defs(defs: &BTreeMap<VariableName, FragmentOutDef>) -> String {
     defs.iter()
-        .map(compile_fragment_out_def)
+        .map(|(name, FragmentOutDef(t, q))| {
+            let prefix = match q {
+                FragmentOutQualifier::Local => "",
+                FragmentOutQualifier::Yield => "out ",
+            };
+
+            compile_variable_def(prefix, name, *t)
+        })
         .collect::<Vec<_>>()
         .join("")
 }
 
-fn compile_uniforms<P: UniformInput>() -> String {
+fn compile_uniform_input<P: UniformInput>() -> String {
     let uniforms = P::uniform_input_defs();
 
     compile_variable_defs("uniform", uniforms.iter().cloned())
@@ -508,23 +503,19 @@ fn compile_instance_input<P: UniformInput>(mode: InstancingMode) -> String {
     }
 }
 
-fn compile_out_assignment((name, expr): (VariableName, GLSL)) -> String {
-    "    ".to_string() + &name + " = " + &expr + ";\n"
-}
-
 fn compile_out_assignments(exprs: impl Iterator<Item = (VariableName, GLSL)>) -> String {
     exprs
-        .map(compile_out_assignment)
+        .map(|(name, expr)| format!("    {} = {};\n", name, expr))
         .collect::<Vec<_>>()
         .join("")
 }
 
-fn attribute_type_to_uniform_type(t: AttributeType) -> UniformType {
+fn attribute_type(t: AttributeType) -> Type {
     match t {
-        AttributeType::F32 => UniformType::Float,
-        AttributeType::F32F32 => UniformType::FloatVec2,
-        AttributeType::F32F32F32 => UniformType::FloatVec3,
-        AttributeType::F32F32F32F32 => UniformType::FloatVec4,
+        AttributeType::F32 => Type::Float,
+        AttributeType::F32F32 => Type::FloatVec2,
+        AttributeType::F32F32F32 => Type::FloatVec3,
+        AttributeType::F32F32F32F32 => Type::FloatVec4,
         _ => unimplemented!("Given AttributeType not yet supported: {:?}", t),
     }
 }
@@ -534,10 +525,7 @@ fn compile_vertex_attributes<V: glium::vertex::Vertex>() -> String {
 
     let mut attributes = Vec::new();
     for i in 0..bindings.len() {
-        attributes.push((
-            bindings[i].0.to_string(),
-            attribute_type_to_uniform_type(bindings[i].2),
-        ));
+        attributes.push((bindings[i].0.to_string(), attribute_type(bindings[i].2)));
     }
 
     compile_variable_defs("in", attributes.iter().cloned())
@@ -554,11 +542,11 @@ where
 
         s += "#version 330\n\n";
 
-        s += &compile_uniforms::<P>();
+        s += &compile_uniform_input::<P>();
         s += "\n";
         s += &compile_instance_input::<I>(mode);
         s += "\n";
-        s += &compile_variable_defs("uniform", self.extra_uniforms.iter().cloned());
+        s += &compile_variable_defs("uniform", self.extra_uniforms.clone().into_iter());
         s += "\n";
         s += &compile_vertex_attributes::<V>();
         s += "\n";
@@ -587,9 +575,9 @@ where
 
         s += "#version 330\n\n";
 
-        s += &compile_uniforms::<P>();
+        s += &compile_uniform_input::<P>();
         s += "\n";
-        s += &compile_variable_defs("uniform", self.extra_uniforms.iter().cloned());
+        s += &compile_variable_defs("uniform", self.extra_uniforms.clone().into_iter());
         s += "\n";
         s += &compile_vertex_out_defs("in", &self.in_defs);
         s += "\n";

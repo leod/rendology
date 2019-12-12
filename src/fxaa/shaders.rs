@@ -303,8 +303,8 @@ pub fn postprocessing_core(
     exploration_offsets: &[f32],
 ) -> shader::Core<(), (), screen_quad::Vertex> {
     let vertex = shader::VertexCore::empty()
-        .with_out(shader::defs::v_tex_coord(), "tex_coord")
-        .with_out_expr(shader::defs::V_POS, "position");
+        .with_out(shader::defs::V_TEX_COORD, "tex_coord")
+        .with_out(shader::defs::V_POS, "position");
 
     if exploration_offsets.len() < 3 {
         panic!("exploration_offsets must contain at least three members");
@@ -331,10 +331,10 @@ pub fn postprocessing_core(
     let fragment = shader::FragmentCore::empty()
         .with_extra_uniform("input_texture", UniformType::Sampler2d)
         .with_defs(DEFS)
-        .with_in_def(shader::defs::v_tex_coord())
+        .with_in_def(shader::defs::V_TEX_COORD)
         .with_body(&body)
         .with_out(
-            shader::defs::f_color(),
+            shader::defs::F_COLOR,
             "vec4(texture(input_texture, final_tex_coord).rgb, 1.0)",
         );
 
