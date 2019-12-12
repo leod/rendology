@@ -7,7 +7,7 @@ use crate::shader;
 pub fn depth_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader::Core<P, I, V> {
     // Only write depth into the output, discard color output of original core
     let fragment =
-        shader::FragmentCore::empty().with_out(shader::defs::f_fragment_depth(), "gl_FragCoord.z");
+        shader::FragmentCore::empty().with_out(shader::defs::F_FRAGMENT_DEPTH, "gl_FragCoord.z");
 
     shader::Core {
         vertex: core.vertex,
@@ -22,18 +22,18 @@ pub fn render_shadowed_core_transform<P, I, V>(
     core: shader::Core<(Context, P), I, V>,
 ) -> shader::Core<(Context, P), I, V> {
     assert!(
-        core.vertex.has_out(shader::defs::V_WORLD_POS),
+        core.vertex.has_out_def(shader::defs::V_WORLD_POS),
         "VertexCore needs V_WORLD_POS output for shadow mapping"
     );
     assert!(
-        core.vertex.has_out(shader::defs::V_WORLD_NORMAL),
+        core.vertex.has_out_def(shader::defs::V_WORLD_NORMAL),
         "VertexCore needs V_WORLD_NORMAL output for shadow mapping"
     );
 
     // Position of current vertex in light space
     let v_light_space_pos = (
-        ("v_light_space_pos".into(), UniformType::FloatVec4),
-        shader::VertexOutQualifier::Smooth,
+        "v_light_space_pos",
+        shader::VertexOutDef(shader::Type::FloatVec4, shader::VertexOutQualifier::Smooth),
     );
 
     let vertex = core
@@ -93,12 +93,12 @@ pub fn render_shadowed_core_transform<P, I, V>(
     let fragment = core
         .fragment
         .with_extra_uniform("shadow_map", UniformType::Sampler2d)
-        .with_in_def(shader::defs::v_world_pos())
-        .with_in_def(shader::defs::v_world_normal())
+        .with_in_def(shader::defs::V_WORLD_POS)
+        .with_in_def(shader::defs::V_WORLD_NORMAL)
         .with_in_def(v_light_space_pos)
         .with_defs(&shadow_calculation)
         .with_out(
-            shader::defs::f_shadow(),
+            shader::defs::F_SHADOW,
             "shadow_calculation(v_light_space_pos)",
         );
 

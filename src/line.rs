@@ -117,12 +117,10 @@ pub fn create_mesh<F: glium::backend::Facade>(facade: &F) -> Result<Mesh<Point>,
     )
 }
 
-fn v_normal() -> shader::VertexOutDef {
-    (
-        ("v_normal".into(), glium::uniforms::UniformType::FloatVec2),
-        shader::VertexOutQualifier::Smooth,
-    )
-}
+const V_NORMAL: (&str, shader::VertexOutDef) = (
+    "v_normal",
+    shader::VertexOutDef(shader::Type::FloatVec2, shader::VertexOutQualifier::Smooth),
+);
 
 const VERTEX_BODY: &str = "
     vec2 aspect_vec = vec2(context_camera_viewport_size.x / context_camera_viewport_size.y, 1.0);
@@ -168,18 +166,18 @@ impl SceneCore for Core {
     fn scene_core(&self) -> shader::Core<(Context, Params), Instance, Point> {
         let vertex = shader::VertexCore::empty()
             .with_body(VERTEX_BODY)
-            .with_out(shader::defs::v_color(), "instance_color")
-            .with_out(shader::defs::v_world_pos(), "vec4(0.0, 0.0, 0.0, 0.0)")
-            .with_out(shader::defs::v_world_normal(), "vec3(0.0, 0.0, 0.0)")
-            .with_out(v_normal(), "line_normal")
-            .with_out_expr(
+            .with_out(shader::defs::V_COLOR, "instance_color")
+            .with_out(shader::defs::V_WORLD_POS, "vec4(0.0, 0.0, 0.0, 0.0)")
+            .with_out(shader::defs::V_WORLD_NORMAL, "vec3(0.0, 0.0, 0.0)")
+            .with_out(V_NORMAL, "line_normal")
+            .with_out(
                 shader::defs::V_POS,
                 "curr_projected + vec4(line_offset, 0.0, 0.0)",
             );
 
         let fragment = shader::FragmentCore::empty()
-            .with_in_def(shader::defs::v_color())
-            .with_in_def(v_normal())
+            .with_in_def(shader::defs::V_COLOR)
+            .with_in_def(V_NORMAL)
             .with_body(
                 "
                 float distance_from_center = length(v_normal);
@@ -190,7 +188,7 @@ impl SceneCore for Core {
                 ",
             )
             .with_out(
-                shader::defs::f_color(),
+                shader::defs::F_COLOR,
                 "vec4(v_color.rgb, v_color.a * alpha)",
             );
 
