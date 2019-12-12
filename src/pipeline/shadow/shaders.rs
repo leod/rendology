@@ -18,6 +18,7 @@ pub fn depth_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader:
 /// Shader core for rendering the shadowed scene.
 pub fn render_shadowed_core_transform<P, I, V>(
     shadow_value: f32,
+    pcf_distance: usize,
     core: shader::Core<(Context, P), I, V>,
 ) -> shader::Core<(Context, P), I, V> {
     assert!(
@@ -55,23 +56,39 @@ pub fn render_shadowed_core_transform<P, I, V>(
             if (dot(light_dir, v_world_normal) < 0.0)
                 return SHADOW_VALUE;
 
-            // TODO: Is there a way to do this on texture-level?
+            // Q: Is there a way to do this on texture-level?
+            // Answer: yes, for x/y, but it's not supported in glium.
+            // (GL_CLAMP_TO_BORDER + GL_TEXTURE_BORDER_COLOR)
             if (proj_coords.z > 1.0
                 || proj_coords.x < 0.0
                 || proj_coords.x > 1.0
                 || proj_coords.y < 0.0
-                || proj_coords.y > 1.0) {
+                || proj_coords.y > 1.0)
+            {
                 return 1.0;
             }
 
-            float closest_depth = texture(shadow_map, proj_coords.xy).r;
-            float current_depth = proj_coords.z;
+            float shadow = 0.0;
+            for (int x = -PCF_DISTANCE; x <= PCF_DISTANCE; ++x) {
+                for (int y = -PCF_DISTANCE; y <= PCF_DISTANCE; ++y) {
+                    float closest_depth = textureOffset(
+                        shadow_map, 
+                        proj_coords.xy,
+                        ivec2(x, y)
+                    ).r;
+                    
+                    shadow += proj_coords.z > closest_depth ? SHADOW_VALUE : 1.0;
+                }
+            }
+            shadow /= PCF_SAMPLES;
 
-            return current_depth > closest_depth ? SHADOW_VALUE : 1.0;
+            return shadow;
         }
     "
     .to_string()
-    .replace("SHADOW_VALUE", &shadow_value.to_string());
+    .replace("SHADOW_VALUE", &shadow_value.to_string())
+    .replace("PCF_DISTANCE", &pcf_distance.to_string())
+    .replace("PCF_SAMPLES", &(2 * pcf_distance + 1).pow(2).to_string());
 
     let fragment = core
         .fragment

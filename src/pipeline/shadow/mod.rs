@@ -23,6 +23,7 @@ pub use crate::CreationError;
 pub struct Config {
     pub shadow_map_size: na::Vector2<u32>,
     pub shadow_value: f32,
+    pub pcf_distance: usize,
 }
 
 impl Default for Config {
@@ -30,6 +31,7 @@ impl Default for Config {
         Config {
             shadow_map_size: na::Vector2::new(4096, 4096),
             shadow_value: 0.5,
+            pcf_distance: 1,
         }
     }
 }
@@ -76,7 +78,11 @@ impl ScenePassComponent for ShadowMapping {
         &self,
         core: shader::Core<(Context, P), I, V>,
     ) -> shader::Core<(Context, P), I, V> {
-        shaders::render_shadowed_core_transform(self.config.shadow_value, core)
+        shaders::render_shadowed_core_transform(
+            self.config.shadow_value,
+            self.config.pcf_distance,
+            core,
+        )
     }
 
     fn params(&self, context: &Context) -> ScenePassParams {
