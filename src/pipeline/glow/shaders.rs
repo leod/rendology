@@ -7,19 +7,15 @@ use glium::uniforms::UniformType;
 
 use crate::{screen_quad, shader};
 
-pub const F_GLOW_COLOR: &str = "f_glow_color";
-
-pub fn f_glow_color() -> shader::FragmentOutDef {
-    (
-        (F_GLOW_COLOR.into(), UniformType::FloatVec3),
-        shader::FragmentOutQualifier::Yield,
-    )
-}
+pub const F_GLOW_COLOR: (&str, shader::FragmentOutDef) = (
+    "f_glow_color",
+    shader::FragmentOutDef(shader::Type::FloatVec3, shader::FragmentOutQualifier::Yield),
+);
 
 /// Shader core transform for rendering color into a texture so that it can be
 /// blurred and composed for a glow effect later in the pipeline.
 pub fn glow_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader::Core<P, I, V> {
-    let fragment = core.fragment.with_out(f_glow_color(), "vec3(f_color)");
+    let fragment = core.fragment.with_out(F_GLOW_COLOR, "vec3(f_color)");
 
     shader::Core {
         vertex: core.vertex,
@@ -32,9 +28,7 @@ pub fn glow_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader::
 ///
 /// TODO: Figure out if we can have glow be an uniform instead.
 pub fn no_glow_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader::Core<P, I, V> {
-    let fragment = core
-        .fragment
-        .with_out(f_glow_color(), "vec3(0.0, 0.0, 0.0)");
+    let fragment = core.fragment.with_out(F_GLOW_COLOR, "vec3(0.0, 0.0, 0.0)");
 
     shader::Core {
         vertex: core.vertex,
@@ -45,8 +39,8 @@ pub fn no_glow_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shade
 /// Shader core for blurring the glow texture.
 pub fn blur_core() -> shader::Core<(), (), screen_quad::Vertex> {
     let vertex = shader::VertexCore::empty()
-        .with_out(shader::defs::v_tex_coord(), "tex_coord")
-        .with_out_expr(shader::defs::V_POS, "position");
+        .with_out(shader::defs::V_TEX_COORD, "tex_coord")
+        .with_out(shader::defs::V_POS, "position");
 
     let defs = "
 		float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
@@ -94,10 +88,10 @@ pub fn blur_core() -> shader::Core<(), (), screen_quad::Vertex> {
     let fragment = shader::FragmentCore::empty()
         .with_extra_uniform("horizontal", UniformType::Bool)
         .with_extra_uniform("glow_texture", UniformType::Sampler2d)
-        .with_in_def(shader::defs::v_tex_coord())
+        .with_in_def(shader::defs::V_TEX_COORD)
         .with_defs(defs)
         .with_body(body)
-        .with_out(shader::defs::f_color(), "vec4(blur_result, 1.0)");
+        .with_out(shader::defs::F_COLOR, "vec4(blur_result, 1.0)");
 
     shader::Core { vertex, fragment }
 }
@@ -107,11 +101,11 @@ pub fn composition_core_transform<P>(
     core: shader::Core<P, (), screen_quad::Vertex>,
 ) -> shader::Core<P, (), screen_quad::Vertex> {
     assert!(
-        core.fragment.has_in(shader::defs::V_TEX_COORD),
+        core.fragment.has_in_def(shader::defs::V_TEX_COORD),
         "FragmentCore needs V_TEX_COORD input for glow composition pass"
     );
     assert!(
-        core.fragment.has_out(shader::defs::F_COLOR),
+        core.fragment.has_out_def(shader::defs::F_COLOR),
         "FragmentCore needs F_COLOR output for glow composition pass"
     );
 
@@ -119,7 +113,7 @@ pub fn composition_core_transform<P>(
         .fragment
         .with_extra_uniform("glow_texture", UniformType::Sampler2d)
         .with_out_expr(
-            shader::defs::F_COLOR,
+            "f_color",
             "f_color + vec4(texture(glow_texture, v_tex_coord).rgb, 0.0)",
         );
 
