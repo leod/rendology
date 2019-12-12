@@ -334,7 +334,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
         let mut output_textures = pipeline
             .components
             .shaded_scene_pass_output_textures(&pass.setup);
-        output_textures.push((shader::defs::F_COLOR, &pipeline.scene_color_texture));
+        output_textures.push((shader::defs::F_COLOR.0, &pipeline.scene_color_texture));
 
         let mut framebuffer = MultiOutputFrameBuffer::with_depth_buffer(
             self.0.facade,
