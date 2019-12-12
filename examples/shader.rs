@@ -71,7 +71,8 @@ fn diffuse_transform<I, V>(core: shader::Core<Params, I, V>) -> shader::Core<Par
                 0.0,
                 dot(v_world_normal, normalize(light_pos - v_world_pos.xyz))
             );
-            ")
+            ",
+        )
         .with_out_expr("f_color", "diffuse * f_color");
 
     shader::Core {
