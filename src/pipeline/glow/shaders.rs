@@ -46,7 +46,7 @@ pub fn no_glow_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shade
 pub fn blur_core() -> shader::Core<(), (), screen_quad::Vertex> {
     let vertex = shader::VertexCore::empty()
         .with_out(shader::defs::v_tex_coord(), "tex_coord")
-        .with_out_expr(shader::defs::V_POSITION, "position");
+        .with_out_expr(shader::defs::V_POS, "position");
 
     let defs = "
 		float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);

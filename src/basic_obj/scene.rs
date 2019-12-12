@@ -46,7 +46,7 @@ impl SceneCore for Core {
             )
             .with_out(shader::defs::v_color(), "instance_color")
             .with_out_expr(
-                shader::defs::V_POSITION,
+                shader::defs::V_POS,
                 "context_camera_projection * context_camera_view * v_world_pos",
             );
 

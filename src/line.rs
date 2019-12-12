@@ -171,7 +171,7 @@ impl SceneCore for Core {
             .with_out(shader::defs::v_color(), "instance_color")
             .with_out(v_normal(), "line_normal")
             .with_out_expr(
-                shader::defs::V_POSITION,
+                shader::defs::V_POS,
                 "curr_projected + vec4(line_offset, 0.0, 0.0)",
             );
 
