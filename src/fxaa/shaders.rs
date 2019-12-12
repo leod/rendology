@@ -304,7 +304,7 @@ pub fn postprocessing_core(
 ) -> shader::Core<(), (), screen_quad::Vertex> {
     let vertex = shader::VertexCore::empty()
         .with_out(shader::defs::v_tex_coord(), "tex_coord")
-        .with_out_expr(shader::defs::V_POSITION, "position");
+        .with_out_expr(shader::defs::V_POS, "position");
 
     if exploration_offsets.len() < 3 {
         panic!("exploration_offsets must contain at least three members");

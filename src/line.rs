@@ -169,9 +169,11 @@ impl SceneCore for Core {
         let vertex = shader::VertexCore::empty()
             .with_body(VERTEX_BODY)
             .with_out(shader::defs::v_color(), "instance_color")
+            .with_out(shader::defs::v_world_pos(), "vec4(0.0, 0.0, 0.0, 0.0)")
+            .with_out(shader::defs::v_world_normal(), "vec3(0.0, 0.0, 0.0)")
             .with_out(v_normal(), "line_normal")
             .with_out_expr(
-                shader::defs::V_POSITION,
+                shader::defs::V_POS,
                 "curr_projected + vec4(line_offset, 0.0, 0.0)",
             );
 

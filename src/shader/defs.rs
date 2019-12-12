@@ -6,7 +6,7 @@ pub const V_WORLD_NORMAL: &str = "v_world_normal";
 pub const V_WORLD_POS: &str = "v_world_pos";
 pub const V_COLOR: &str = "v_color";
 pub const V_TEX_COORD: &str = "v_tex_coord";
-pub const V_POSITION: &str = "gl_Position";
+pub const V_POS: &str = "gl_Position";
 
 pub const F_COLOR: &str = "f_color";
 pub const F_FRAGMENT_DEPTH: &str = "f_fragment_depth";
