@@ -65,7 +65,13 @@ fn diffuse_transform<I, V>(core: shader::Core<Params, I, V>) -> shader::Core<Par
         .fragment
         .with_in_def(shader::defs::V_WORLD_POS)
         .with_in_def(shader::defs::V_WORLD_NORMAL)
-        .with_body("float diffuse = max(0.0, dot(v_world_normal, light_pos - v_world_pos.xyz));")
+        .with_body(
+            "
+            float diffuse = max(
+                0.0,
+                dot(v_world_normal, normalize(light_pos - v_world_pos.xyz))
+            );
+            ")
         .with_out_expr("f_color", "diffuse * f_color");
 
     shader::Core {
