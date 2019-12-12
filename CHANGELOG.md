@@ -3,6 +3,7 @@
 - `Pipeline::start_frame` now takes the clear color ([#6](https://github.com/leod/rendology/pull/6))
 - Implement basic line rendering ([#7](https://github.com/leod/rendology/pull/7))
 - Allow plain scene pass after postprocessing ([#8](https://github.com/leod/rendology/pull/8))
+- Implement simple shadow smoothing ([#9](https://github.com/leod/rendology/pull/9))
 
 ## Version 0.3.0 (2019-12-10)
 - Allow passing draw parameters to shadow pass ([#3](https://github.com/leod/rendology/pull/3))
