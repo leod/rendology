@@ -68,13 +68,14 @@ pub fn render_shadowed_core_transform<P, I, V>(
                 return 1.0;
             }
 
+            vec2 texel_size = 1.0 / textureSize(shadow_map, 0);
+
             float shadow = 0.0;
             for (int x = -PCF_DISTANCE; x <= PCF_DISTANCE; ++x) {
                 for (int y = -PCF_DISTANCE; y <= PCF_DISTANCE; ++y) {
-                    float closest_depth = textureOffset(
+                    float closest_depth = texture(
                         shadow_map, 
-                        proj_coords.xy,
-                        ivec2(x, y)
+                        proj_coords.xy + vec2(x, y) * texel_size
                     ).r;
                     
                     shadow += proj_coords.z > closest_depth ? SHADOW_VALUE : 1.0;
