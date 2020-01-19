@@ -287,6 +287,36 @@ where
     pub fn link(&self) -> LinkedCore<P, I, V> {
         let mut fragment = self.fragment.clone();
 
+        // Remove unused local fragment shader outputs.
+        //
+        // We take the transitive closure by looping, since removing one output
+        // may cause another output to become unused.
+        let mut changed = true;
+
+        while changed {
+            changed = false;
+
+            for (out_name, FragmentOutDef(_, q)) in fragment.out_defs.clone().iter() {
+                if *q == FragmentOutQualifier::Local {
+                    let is_used = does_core_use_variable(
+                        &fragment.defs,
+                        &fragment.body,
+                        &fragment.out_exprs,
+                        &out_name,
+                    );
+
+                    if !is_used {
+                        info!("Removing unused local fragment output {}", out_name);
+
+                        fragment.out_defs.remove(out_name);
+                        fragment.out_exprs.retain(|(name, _)| name != out_name);
+
+                        changed = true;
+                    }
+                }
+            }
+        }
+
         // Remove unused inputs from fragment shader.
         fragment.in_defs = fragment
             .in_defs
@@ -301,7 +331,7 @@ where
                 );
 
                 if !r {
-                    info!("Removing fragment input {}", in_name);
+                    info!("Removing unused fragment input {}", in_name);
                 }
 
                 r
@@ -314,7 +344,7 @@ where
 
         for (out_name, VertexOutDef(_, q)) in vertex.out_defs.iter_mut() {
             if !fragment.has_in(&out_name) {
-                info!("Demoting vertex output {} to local", out_name);
+                info!("Demoting unconnected vertex output {} to local", out_name);
 
                 *q = VertexOutQualifier::Local;
             }
@@ -339,7 +369,7 @@ where
                     );
 
                     if !is_used {
-                        info!("Removing vertex output {}", out_name);
+                        info!("Removing unused local vertex output {}", out_name);
 
                         vertex.out_defs.remove(out_name);
                         vertex.out_exprs.retain(|(name, _)| name != out_name);
