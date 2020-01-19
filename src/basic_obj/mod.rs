@@ -9,7 +9,7 @@ use num_traits::{FromPrimitive, ToPrimitive};
 use crate::shader::{InstanceInput, InstancingMode, ToUniforms};
 use crate::{CreationError, DrawError, Drawable, Mesh};
 
-pub use mesh::{load_wavefront, mesh_from_slices, CUBE_INDICES, CUBE_NORMALS, CUBE_POSITIONS};
+pub use mesh::{mesh_from_slices, CUBE_INDICES, CUBE_NORMALS, CUBE_POSITIONS};
 pub use scene::{Core, Instance};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, num_derive::FromPrimitive, num_derive::ToPrimitive)]
