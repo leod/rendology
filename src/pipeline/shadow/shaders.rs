@@ -4,10 +4,18 @@ use crate::pipeline::Context;
 use crate::shader;
 
 /// Shader core for rendering the depth map from the light source's perspective.
-pub fn depth_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader::Core<P, I, V> {
-    // Only write depth into the output, discard color output of original core
-    let fragment =
-        shader::FragmentCore::empty().with_out(shader::defs::F_FRAGMENT_DEPTH, "gl_FragCoord.z");
+pub fn depth_map_core_transform<P, I, V>(mut core: shader::Core<P, I, V>) -> shader::Core<P, I, V> {
+    // Demote the given fragment shader's outputs (e.g. color) to be local. The
+    // shader linker will remove them completely, if they are not referenced
+    // anywhere else in the shader.
+    for (_, out_def) in core.fragment.out_defs.iter_mut() {
+        out_def.1 = shader::FragmentOutQualifier::Local;
+    }
+
+    // Only write depth into the output.
+    let fragment = core
+        .fragment
+        .with_out(shader::defs::F_FRAGMENT_DEPTH, "gl_FragCoord.z");
 
     shader::Core {
         vertex: core.vertex,
