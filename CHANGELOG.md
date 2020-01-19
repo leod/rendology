@@ -1,4 +1,7 @@
 # Changelog
+## Version 0.4.2
+- Remove dependency on `genmesh` and `obj` crates
+
 ## Version 0.4.1 (2019-12-17)
 - Fix bug in shadow mapping on Intel GPUs ([#12](https://github.com/leod/rendology/pull/12))
 

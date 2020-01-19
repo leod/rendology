@@ -47,7 +47,7 @@ where
         let range = start_index..start_index + num_to_write;
 
         // Safe to unwrap since we have bounded the range to our capacity.
-        let slice = self.buffer.slice_mut(range.clone()).unwrap();
+        let slice = self.buffer.slice_mut(range).unwrap();
         slice.write(&vertices[0..num_to_write]);
 
         self.num_used += num_to_write;

@@ -1,9 +1,5 @@
-use std::path::Path;
-
-use log::info;
-
 use crate::basic_obj::{BasicObj, Vertex};
-use crate::mesh::{IndexBuffer, Mesh};
+use crate::mesh::Mesh;
 use crate::CreationError;
 
 pub fn mesh_from_slices<F: glium::backend::Facade>(
@@ -23,51 +19,6 @@ pub fn mesh_from_slices<F: glium::backend::Facade>(
         .collect::<Vec<_>>();
 
     Mesh::create_with_indices(facade, primitive_type, &vertices, indices)
-}
-
-pub fn load_wavefront<F: glium::backend::Facade>(
-    facade: &F,
-    path: &Path,
-) -> Result<Mesh<Vertex>, CreationError> {
-    info!("Loading Wavefront .OBJ file: `{}'", path.display());
-
-    // As in:
-    // https://github.com/glium/glium/blob/master/examples/support/mod.rs
-
-    let data = obj::Obj::load(path).unwrap();
-
-    let mut vertices = Vec::new();
-
-    for object in data.objects.iter() {
-        for polygon in object.groups.iter().flat_map(|g| g.polys.iter()) {
-            match polygon {
-                genmesh::Polygon::PolyTri(genmesh::Triangle {
-                    x: v1,
-                    y: v2,
-                    z: v3,
-                }) => {
-                    for v in [v1, v2, v3].iter() {
-                        let position = data.position[v.0];
-                        let normal = v.2.map(|index| data.normal[index]);
-
-                        let normal = normal.unwrap_or([0.0, 0.0, 0.0]);
-
-                        vertices.push(Vertex { position, normal })
-                    }
-                }
-                _ => unimplemented!(),
-            }
-        }
-    }
-
-    let vertex_buffer = glium::VertexBuffer::new(facade, &vertices).unwrap();
-    let primitive_type = glium::index::PrimitiveType::TrianglesList;
-    let index_buffer = IndexBuffer::NoIndices(glium::index::NoIndices(primitive_type));
-
-    Ok(Mesh {
-        vertex_buffer,
-        index_buffer,
-    })
 }
 
 #[rustfmt::skip]
