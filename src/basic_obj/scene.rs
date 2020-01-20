@@ -1,6 +1,6 @@
 use nalgebra as na;
 
-use crate::scene::SceneCore;
+use crate::scene::{CoreInput, SceneCore};
 use crate::{basic_obj, shader, Context};
 
 #[derive(Clone, Debug)]
@@ -28,11 +28,13 @@ impl_instance_input!(
 
 pub struct Core;
 
-impl SceneCore for Core {
+impl CoreInput for Core {
     type Params = ();
     type Instance = Instance;
     type Vertex = basic_obj::Vertex;
+}
 
+impl SceneCore for Core {
     fn scene_core(&self) -> shader::Core<(Context, ()), Instance, basic_obj::Vertex> {
         let vertex = shader::VertexCore::empty()
             .with_out(

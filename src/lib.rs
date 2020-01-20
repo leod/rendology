@@ -15,6 +15,7 @@ pub mod fxaa;
 pub mod line;
 pub mod pipeline;
 pub mod screen_quad;
+pub mod particles;
 
 pub use basic_obj::BasicObj;
 pub use camera::Camera;
@@ -26,7 +27,7 @@ pub use pipeline::{
     Config, Pipeline, PlainScenePass, ShadedScenePass, ShadedScenePassSetup, ShadowPass,
 };
 pub use render_list::RenderList;
-pub use scene::SceneCore;
+pub use scene::{CoreInput, SceneCore};
 pub use screen_quad::ScreenQuad;
 pub use shader::InstancingMode;
 pub use stage::{Context, Light};
