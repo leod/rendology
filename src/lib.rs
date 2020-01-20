@@ -15,6 +15,7 @@ pub mod fxaa;
 pub mod line;
 pub mod pipeline;
 pub mod screen_quad;
+pub mod particle;
 
 pub use basic_obj::BasicObj;
 pub use camera::Camera;
