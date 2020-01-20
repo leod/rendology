@@ -13,7 +13,6 @@ mod stage;
 pub mod basic_obj;
 pub mod fxaa;
 pub mod line;
-pub mod particles;
 pub mod pipeline;
 pub mod screen_quad;
 
