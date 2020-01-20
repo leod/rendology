@@ -404,6 +404,33 @@ where
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct EmptyVertexHack {
+    __rendology_dummy_field: f32,
+}
+
+glium::implement_vertex!(EmptyVertexHack, __rendology_dummy_field);
+
+impl<'u> HasUniforms<'u> for EmptyVertexHack {
+    type Uniforms = EmptyUniforms;
+}
+
+impl ToUniforms for EmptyVertexHack {
+    fn to_uniforms(&self) -> EmptyUniforms {
+        EmptyUniforms
+    }
+}
+
+impl InstanceInput for () {
+    type Vertex = EmptyVertexHack;
+
+    fn to_vertex(&self) -> EmptyVertexHack {
+        EmptyVertexHack {
+            __rendology_dummy_field: 42.0,
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! plain_uniforms {
     () => {
