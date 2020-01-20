@@ -16,7 +16,7 @@ use nalgebra as na;
 
 use glium::implement_vertex;
 
-use crate::{shader, Context, CreationError, Mesh, SceneCore};
+use crate::{shader, Context, CoreInput, CreationError, Mesh, SceneCore};
 
 #[derive(Clone, Debug)]
 pub struct Params {
@@ -158,11 +158,13 @@ const VERTEX_BODY: &str = "
 
 pub struct Core;
 
-impl SceneCore for Core {
+impl CoreInput for Core {
     type Params = Params;
     type Instance = Instance;
     type Vertex = Point;
+}
 
+impl SceneCore for Core {
     fn scene_core(&self) -> shader::Core<(Context, Params), Instance, Point> {
         let vertex = shader::VertexCore::empty()
             .with_body(VERTEX_BODY)
