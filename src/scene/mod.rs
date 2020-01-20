@@ -18,7 +18,11 @@ pub trait CoreInput {
 pub trait SceneCore: CoreInput {
     fn scene_core(
         &self,
-    ) -> shader::Core<(Context, <Self as CoreInput>::Params), <Self as CoreInput>::Instance, <Self as CoreInput>::Vertex>;
+    ) -> shader::Core<
+        (Context, <Self as CoreInput>::Params),
+        <Self as CoreInput>::Instance,
+        <Self as CoreInput>::Vertex,
+    >;
 }
 
 impl<T: SceneCore> BuildProgram for T {
@@ -28,6 +32,8 @@ impl<T: SceneCore> BuildProgram for T {
         instancing_mode: InstancingMode,
     ) -> Result<glium::Program, glium::program::ProgramCreationError> {
         // TODO: Dropping error detail here...
-        self.scene_core().build_program(facade, instancing_mode).map_err(|e| e.error)
+        self.scene_core()
+            .build_program(facade, instancing_mode)
+            .map_err(|e| e.error)
     }
 }

@@ -15,7 +15,7 @@ const WINDOW_SIZE: (u32, u32) = (1280, 720);
 
 mod my_scene {
     use nalgebra as na;
-    use rendology::{basic_obj, shader, Context, SceneCore, CoreInput};
+    use rendology::{basic_obj, shader, Context, CoreInput, SceneCore};
 
     #[derive(Clone)]
     pub struct Params<'a> {
