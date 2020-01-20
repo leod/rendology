@@ -16,7 +16,7 @@ use nalgebra as na;
 
 use glium::implement_vertex;
 
-use crate::{shader, Context, CreationError, Mesh, SceneCore, CoreInput};
+use crate::{shader, Context, CoreInput, CreationError, Mesh, SceneCore};
 
 #[derive(Clone, Debug)]
 pub struct Params {
