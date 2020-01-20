@@ -15,7 +15,7 @@ const WINDOW_SIZE: (u32, u32) = (1280, 720);
 
 mod my_scene {
     use nalgebra as na;
-    use rendology::{basic_obj, shader, Context, SceneCore};
+    use rendology::{basic_obj, shader, Context, CoreInput, SceneCore};
 
     #[derive(Clone)]
     pub struct Params<'a> {
@@ -45,11 +45,13 @@ mod my_scene {
 
     pub struct Core;
 
-    impl SceneCore for Core {
+    impl CoreInput for Core {
         type Params = Params<'static>;
         type Instance = Instance;
         type Vertex = basic_obj::Vertex;
+    }
 
+    impl SceneCore for Core {
         fn scene_core(
             &self,
         ) -> shader::Core<(Context, Self::Params), Self::Instance, Self::Vertex> {
