@@ -3,6 +3,7 @@ use std::time::Instant;
 use floating_duration::TimeAsFloat;
 use glium::{glutin, Surface};
 use nalgebra as na;
+use coarse_prof::profile;
 
 use rendology::{
     particle, basic_obj, BasicObj, Instancing, InstancingMode, Light, Mesh, RenderList, ShadedScenePass,
@@ -80,7 +81,12 @@ impl Pipeline {
         scene: &Scene,
         target: &mut S,
     ) -> Result<(), rendology::DrawError> {
-        self.particle_system.spawn(scene.new_particles.as_slice());
+        profile!("draw_frame");
+
+        {
+            profile!("particle_system_update");
+            self.particle_system.spawn(scene.new_particles.as_slice());
+        }
         self.cube_instancing
             .update(facade, scene.cubes.as_slice())?;
 
@@ -99,7 +105,13 @@ impl Pipeline {
                 write: false,
                 ..Default::default()
             },
-            blend: glium::Blend::alpha_blending(),
+            blend: glium::Blend {
+                color: glium::BlendingFunction::Addition {
+                    source: glium::LinearBlendingFactor::SourceAlpha,
+                    destination: glium::LinearBlendingFactor::One,
+                },
+                ..Default::default()
+            },
             ..Default::default()
         };
         self.particle_system.set_current_time(scene.time);
@@ -150,8 +162,11 @@ fn main() {
     let mut pipeline = Pipeline::create(&display, &Default::default()).unwrap();
 
     let start_time = Instant::now();
+    let mut last_time = Instant::now();
     let mut quit = false;
     while !quit {
+        profile!("frame");
+
         events_loop.poll_events(|event| {
             if let glutin::Event::WindowEvent {
                 event: glutin::WindowEvent::CloseRequested,
@@ -159,11 +174,24 @@ fn main() {
             } = event
             {
                 quit = true;
+            } else if let glutin::Event::WindowEvent {
+                event: glutin::WindowEvent::KeyboardInput { input, .. },
+                ..
+            } = event {
+                if input.state == glutin::ElementState::Pressed
+                    && input.virtual_keycode == Some(glutin::VirtualKeyCode::P) {
+                    coarse_prof::write(&mut std::io::stdout()).unwrap();
+                    coarse_prof::reset();
+                }
             }
         });
 
+        
         let time = start_time.elapsed().as_fractional_secs() as f32;
-        let scene = scene(time);
+        let dt = last_time.elapsed().as_fractional_secs() as f32;
+        last_time = Instant::now();
+
+        let scene = scene(time, dt);
 
         let mut target = display.draw();
         let render_context = render_context(target.get_dimensions());
@@ -176,7 +204,9 @@ fn main() {
     }
 }
 
-fn scene(time: f32) -> Scene {
+fn scene(time: f32, dt: f32) -> Scene {
+    profile!("scene");
+
     let mut scene = Scene::default();
 
     scene.time = time;
@@ -202,7 +232,7 @@ fn scene(time: f32) -> Scene {
 
     // Spawn particles and stuff
     let t = time;
-    let pos = na::Vector3::new(3.0 * t.cos(), 3.0 * t.sin(), 4.0);
+    let pos = na::Vector3::new(3.0 * t.cos(), 3.0 * t.sin(), 3.0);
     let tangent = na::Vector3::new(t.cos(), t.sin(), 0.0);
 
     let smallest_unit =
@@ -216,22 +246,24 @@ fn scene(time: f32) -> Scene {
     let x_unit = tangent.cross(&smallest_unit).normalize();
     let y_unit = tangent.cross(&x_unit).normalize();
 
-    for _ in 0..1000 {
-        let radius = rand::random::<f32>() * 2.0;
+    let spawn_per_sec = (20000.0 * 30.0) / 3.0;
+
+    for _ in 0..(spawn_per_sec * dt) as usize {
+        let radius = rand::random::<f32>() * 1.41;
         let angle = rand::random::<f32>() * std::f32::consts::PI * 2.0;
 
-        let velocity = radius.sqrt() * angle.cos() * x_unit
-            + radius.sqrt() * angle.sin() * y_unit
+        let velocity = angle.cos() * x_unit
+            + angle.sin() * y_unit
             + radius * tangent.normalize();
 
         let particle = Particle {
             spawn_time: time,
-            life_duration: 2.0,
+            life_duration: 3.0,
             start_pos: pos,
-            velocity,
+            velocity: velocity * radius,
             friction: 0.0,
-            color: na::Vector3::new(1.0, 0.0, 0.0),
-            size: na::Vector2::new(0.1, 0.1),
+            color: na::Vector3::new(radius / 2.0, radius / 8.0, 0.0),
+            size: na::Vector2::new(0.02, 0.02),
         };
 
         scene.new_particles.add(particle);
