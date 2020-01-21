@@ -149,6 +149,12 @@ impl System {
             particles = &particles[num_to_write..];
         }
     }
+
+    pub fn clear(&mut self) {
+        for buffer in self.buffers.iter_mut() {
+            buffer.max_death_time = 0.0;
+        }
+    }
 }
 
 impl Drawable<(), <Particle as InstanceInput>::Vertex> for System {
