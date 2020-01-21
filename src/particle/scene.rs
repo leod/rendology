@@ -21,7 +21,6 @@ pub struct Particle {
     pub life_duration: f32,
     pub start_pos: na::Vector3<f32>,
     pub velocity: na::Vector3<f32>,
-    pub friction: f32,
     pub color: na::Vector3<f32>,
     pub size: na::Vector2<f32>,
 }
@@ -33,7 +32,6 @@ impl_instance_input!(
         particle_life_duration: f32 = self.life_duration,
         particle_start_pos: [f32; 3] = self.start_pos,
         particle_velocity: [f32; 3] = self.velocity,
-        particle_friction: f32 = self.friction,
         particle_color: [f32; 3] = self.color,
         particle_size: [f32; 2] = self.size,
     },
@@ -82,7 +80,6 @@ const VERTEX_SHADER: &str = "
     in float particle_life_duration;
     in vec3 particle_start_pos;
     in vec3 particle_velocity;
-    in float particle_friction;
     in vec3 particle_color;
     in vec2 particle_size;
 
@@ -94,15 +91,13 @@ const VERTEX_SHADER: &str = "
     void main() {
         float delta_time = params_time - particle_spawn_time;
 
-        // Integrate velocity, accounting for friction.
-        vec3 current_pos = particle_start_pos
-            + particle_velocity * delta_time
-            - 0.5 * particle_friction * delta_time * delta_time * normalize(particle_velocity);
+        // Integrate velocity.
+        vec3 current_pos = particle_start_pos + particle_velocity * delta_time;
 
         gl_Position = context_camera_view * vec4(current_pos, 1);
 
         // Forward particle properties to geometry shader.
-        vertex_out.color = vec4(particle_color, 1.0 - delta_time / particle_life_duration);
+        vertex_out.color = vec4(particle_color, 1.0 - pow(delta_time / particle_life_duration, 10.0));
         vertex_out.size = particle_size;
     }
 ";
