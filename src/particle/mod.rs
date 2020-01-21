@@ -8,8 +8,9 @@
 //! difficult as of now anyway, since geometry shaders are not part of the
 //! design of `shader::Core`.
 //!
-//! The particles are currently almost completely non-configurable. We'll
-//! figure this out and extend it as we go.
+//! As a result of lacking `shader::Core` functionality, the particles are
+//! currently almost completely non-configurable. We'll figure this out and
+//! extend it as we go.
 
 mod scene;
 
