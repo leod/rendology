@@ -10,8 +10,9 @@
 
 mod scene;
 
-use crate::shader::InstanceInput;
 use crate::error::{CreationError, DrawError};
+use crate::shader::{InstanceInput, InstancingMode, ToUniforms};
+use crate::Drawable;
 
 pub use scene::{Params, Particle, Shader};
 
@@ -52,7 +53,7 @@ impl Default for Config {
 }
 
 /// A particle system manages multiple buffers to store particles and allows
-/// for rendering htem.
+/// for rendering them.
 pub struct System {
     /// Our configuration.
     config: Config,
@@ -67,6 +68,10 @@ pub struct System {
     ///
     /// `next_index` must always be valid.
     next_index: (usize, usize),
+
+    /// Current time as supplied by the user. Used to render only buffers that
+    /// contain at least one alive particle.
+    current_time: f32,
 }
 
 impl System {
@@ -80,16 +85,21 @@ impl System {
         let buffers = (0..config.num_buffers)
             .map(|_| Buffer::create(facade, config.particles_per_buffer))
             .collect::<Result<Vec<_>, _>>()?;
- 
+
         Ok(Self {
             config: config.clone(),
             buffers,
             next_index: (0, 0),
+            current_time: 0.0,
         })
     }
 
     pub fn shader(&self) -> Shader {
         Shader
+    }
+
+    pub fn set_current_time(&mut self, current_time: f32) {
+        self.current_time = current_time;
     }
 
     pub fn spawn(&mut self, mut particles: &[<Particle as InstanceInput>::Vertex]) {
@@ -136,5 +146,43 @@ impl System {
             // Reduce the slice of particles to write for the next iteration.
             particles = &particles[num_to_write..];
         }
+    }
+}
+
+impl Drawable<(), <Particle as InstanceInput>::Vertex> for System {
+    const INSTANCING_MODE: InstancingMode = InstancingMode::Uniforms;
+
+    fn draw<U, S>(
+        &self,
+        program: &glium::Program,
+        uniforms: &U,
+        draw_params: &glium::DrawParameters,
+        target: &mut S,
+    ) -> Result<(), DrawError>
+    where
+        U: ToUniforms,
+        S: glium::Surface,
+    {
+        for buffer in self.buffers.iter() {
+            if buffer.max_death_time <= self.current_time {
+                // This buffer does not contain any alive particles, so we can
+                // completely skip it.
+                continue;
+            }
+
+            // TODO: If we insert particles in a smart order, we might be able
+            // to render slices of the buffer here if it is partially alive.
+            // This is probably not worth the effort for now.
+
+            target.draw(
+                &buffer.buffer,
+                &glium::index::NoIndices(glium::index::PrimitiveType::Points),
+                program,
+                &uniforms.to_uniforms(),
+                draw_params,
+            )?;
+        }
+
+        Ok(())
     }
 }

@@ -1,16 +1,7 @@
 use nalgebra as na;
 
-use crate::scene::{CoreInput, BuildProgram};
-use crate::shader::{InstancingMode, InstanceInput};
-
-const VERTEX_SHADER: &str = "
-";
-
-const GEOMETRY_SHADER: &str = "
-";
-
-const FRAGMENT_SHADER: &str = "
-";
+use crate::scene::{BuildProgram, CoreInput};
+use crate::shader::{InstanceInput, InstancingMode};
 
 #[derive(Debug, Clone)]
 pub struct Params {
@@ -55,7 +46,9 @@ impl CoreInput for Shader {
 
 impl BuildProgram for Shader {
     fn build_program<F: glium::backend::Facade>(
-        &self, facade: &F, _: InstancingMode,
+        &self,
+        facade: &F,
+        _: InstancingMode,
     ) -> Result<glium::Program, glium::program::ProgramCreationError> {
         // We use the long form of `glium::Program` here to set `outputs_rgb`
         // to true. See `shader::LinkedCore::build_program` for more background.
@@ -75,3 +68,11 @@ impl BuildProgram for Shader {
     }
 }
 
+const VERTEX_SHADER: &str = "
+";
+
+const GEOMETRY_SHADER: &str = "
+";
+
+const FRAGMENT_SHADER: &str = "
+";
