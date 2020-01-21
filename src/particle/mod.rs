@@ -7,6 +7,9 @@
 //! but it seems overkill for now. Unfortunately, that would be somewhat
 //! difficult as of now anyway, since geometry shaders are not part of the
 //! design of `shader::Core`.
+//!
+//! The particles are currently almost completely non-configurable. We'll
+//! figure this out and extend it as we go.
 
 mod scene;
 
@@ -127,7 +130,7 @@ impl System {
             // buffers containing only dead particles when rendering.
             let new_max_death_time = slice_to_write
                 .iter()
-                .map(|particle| particle.spawn_time + particle.life_duration)
+                .map(|particle| particle.particle_spawn_time + particle.particle_life_duration)
                 .fold(0.0, f32::max);
 
             target_buffer.max_death_time = target_buffer.max_death_time.max(new_max_death_time);
