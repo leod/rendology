@@ -485,7 +485,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> PlainScenePassStep<'a, F, S> {
         draw_params: &glium::DrawParameters,
     ) -> Result<Self, DrawError>
     where
-        C: SceneCore,
+        C: CoreInput,
         D: Drawable<C::Instance, C::Vertex>,
         P: shader::input::CompatibleWith<C::Params>,
     {
@@ -531,7 +531,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> PlainScenePassAfterPostprocessSt
         draw_params: &glium::DrawParameters,
     ) -> Result<Self, DrawError>
     where
-        C: SceneCore,
+        C: CoreInput,
         D: Drawable<C::Instance, C::Vertex>,
         P: shader::input::CompatibleWith<C::Params>,
     {
