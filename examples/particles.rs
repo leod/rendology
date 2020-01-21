@@ -1,15 +1,17 @@
+//! Video: https://streamable.com/uglim
+
 use std::time::Instant;
 
+use coarse_prof::profile;
 use floating_duration::TimeAsFloat;
 use glium::{glutin, Surface};
 use nalgebra as na;
-use coarse_prof::profile;
 
-use rendology::{
-    particle, basic_obj, BasicObj, Instancing, InstancingMode, Light, Mesh, RenderList, ShadedScenePass,
-    ShadedScenePassSetup, ShadowPass, PlainScenePass,
-};
 use rendology::particle::Particle;
+use rendology::{
+    basic_obj, particle, BasicObj, Instancing, InstancingMode, Light, Mesh, PlainScenePass,
+    RenderList, ShadedScenePass, ShadedScenePassSetup, ShadowPass,
+};
 
 const WINDOW_SIZE: (u32, u32) = (1280, 720);
 
@@ -83,21 +85,17 @@ impl Pipeline {
     ) -> Result<(), rendology::DrawError> {
         profile!("draw_frame");
 
-        {
-            profile!("particle_system_update");
-            self.particle_system.spawn(scene.new_particles.as_slice());
-        }
         self.cube_instancing
             .update(facade, scene.cubes.as_slice())?;
+
+        self.particle_system.spawn(scene.new_particles.as_slice());
 
         let draw_params = glium::DrawParameters {
             backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
             ..Default::default()
         };
 
-        let particle_params = particle::Params {
-            time: scene.time,
-        };
+        let particle_params = particle::Params { time: scene.time };
         let particle_draw_params = glium::DrawParameters {
             backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
             depth: glium::Depth {
@@ -177,16 +175,17 @@ fn main() {
             } else if let glutin::Event::WindowEvent {
                 event: glutin::WindowEvent::KeyboardInput { input, .. },
                 ..
-            } = event {
+            } = event
+            {
                 if input.state == glutin::ElementState::Pressed
-                    && input.virtual_keycode == Some(glutin::VirtualKeyCode::P) {
+                    && input.virtual_keycode == Some(glutin::VirtualKeyCode::P)
+                {
                     coarse_prof::write(&mut std::io::stdout()).unwrap();
                     coarse_prof::reset();
                 }
             }
         });
 
-        
         let time = start_time.elapsed().as_fractional_secs() as f32;
         let dt = last_time.elapsed().as_fractional_secs() as f32;
         last_time = Instant::now();
@@ -231,18 +230,17 @@ fn scene(time: f32, dt: f32) -> Scene {
     });
 
     // Spawn particles and stuff
-    let t = time;
+    let t = time * 1.5;
     let pos = na::Vector3::new(3.0 * t.cos(), 3.0 * t.sin(), 3.0);
     let tangent = na::Vector3::new(t.cos(), t.sin(), 0.0);
 
-    let smallest_unit =
-        if tangent.x <= tangent.y && tangent.x <= tangent.z {
-            na::Vector3::x()
-        } else if tangent.y <= tangent.x && tangent.y <= tangent.z {
-            na::Vector3::y()
-        } else {
-            na::Vector3::z()
-        };
+    let smallest_unit = if tangent.x <= tangent.y && tangent.x <= tangent.z {
+        na::Vector3::x()
+    } else if tangent.y <= tangent.x && tangent.y <= tangent.z {
+        na::Vector3::y()
+    } else {
+        na::Vector3::z()
+    };
     let x_unit = tangent.cross(&smallest_unit).normalize();
     let y_unit = tangent.cross(&x_unit).normalize();
 
@@ -252,18 +250,16 @@ fn scene(time: f32, dt: f32) -> Scene {
         let radius = rand::random::<f32>() * 1.41;
         let angle = rand::random::<f32>() * std::f32::consts::PI * 2.0;
 
-        let velocity = angle.cos() * x_unit
-            + angle.sin() * y_unit
-            + radius * tangent.normalize();
+        let velocity =
+            angle.cos() * x_unit + angle.sin() * y_unit + 1.41 * radius * tangent.normalize();
 
         let particle = Particle {
             spawn_time: time,
             life_duration: 3.0,
             start_pos: pos,
             velocity: velocity * radius,
-            friction: 0.0,
             color: na::Vector3::new(radius / 2.0, radius / 8.0, 0.0),
-            size: na::Vector2::new(0.02, 0.02),
+            size: na::Vector2::new(0.015, 0.015),
         };
 
         scene.new_particles.add(particle);
