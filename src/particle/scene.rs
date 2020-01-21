@@ -26,18 +26,18 @@ impl_uniform_input!(
 
 #[derive(Debug, Clone)]
 pub struct Particle {
-    spawn_time: f32,
-    lifetime: f32,
-    start_pos: na::Vector3<f32>,
-    velocity: na::Vector3<f32>,
-    color: na::Vector3<f32>,
+    pub spawn_time: f32,
+    pub life_duration: f32,
+    pub start_pos: na::Vector3<f32>,
+    pub velocity: na::Vector3<f32>,
+    pub color: na::Vector3<f32>,
 }
 
 impl_instance_input!(
     Particle,
     self => {
         spawn_time: f32 = self.spawn_time,
-        lifetime: f32 = self.lifetime,
+        life_duration: f32 = self.life_duration,
         start_pos: [f32; 3] = self.start_pos,
         velocity: [f32; 3] = self.velocity,
         color: [f32; 3] = self.color,
