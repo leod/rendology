@@ -87,7 +87,7 @@ const VERTEX_SHADER: &str = "
     in vec2 particle_size;
 
     out VertexData {
-        vec3 color;
+        vec4 color;
         vec2 size;
     } vertex_out;
 
@@ -95,8 +95,8 @@ const VERTEX_SHADER: &str = "
         float delta_time = params_time - particle_spawn_time;
 
         // Integrate velocity, accounting for friction.
-        vec3 current_pos = start_pos
-            + velocity * delta_time
+        vec3 current_pos = particle_start_pos
+            + particle_velocity * delta_time
             - 0.5 * particle_friction * delta_time * delta_time * normalize(particle_velocity);
 
         gl_Position = context_camera_view * vec4(current_pos, 1);
@@ -127,13 +127,28 @@ const GEOMETRY_SHADER: &str = "
 
     void main() {
         // If the particle is alive, generate a camera-aligned quad.
-        if (color.a > 0.0) {
+        if (vertex_in[0].color.a > 0.0) {
             vec4 center = gl_in[0].gl_Position;
             vec2 size = vertex_in[0].size;
 
-            gl_Position = context_camera_projection * (center + vec4(-size.x, -size.y));
+            gl_Position = context_camera_projection * (center + vec4(-size.x, -size.y, 0, 0));
             vertex_out.color = vertex_in[0].color;
             vertex_out.uv = vec2(-1, -1);
+            EmitVertex();
+
+            gl_Position = context_camera_projection * (center + vec4(size.x, -size.y, 0, 0));
+            vertex_out.color = vertex_in[0].color;
+            vertex_out.uv = vec2(1, -1);
+            EmitVertex();
+
+            gl_Position = context_camera_projection * (center + vec4(-size.x, size.y, 0, 0));
+            vertex_out.color = vertex_in[0].color;
+            vertex_out.uv = vec2(-1, 1);
+            EmitVertex();
+
+            gl_Position = context_camera_projection * (center + vec4(size.x, size.y, 0, 0));
+            vertex_out.color = vertex_in[0].color;
+            vertex_out.uv = vec2(1, 1);
             EmitVertex();
         }
     }
