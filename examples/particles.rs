@@ -231,7 +231,7 @@ fn scene(time: f32, dt: f32) -> Scene {
 
     // Spawn particles and stuff
     let t = time * 1.5;
-    let pos = na::Vector3::new(3.0 * t.cos(), 3.0 * t.sin(), 3.0);
+    let pos = na::Point3::new(3.0 * t.cos(), 3.0 * t.sin(), 3.0);
     let tangent = na::Vector3::new(t.cos(), t.sin(), 0.0);
 
     let smallest_unit = if tangent.x <= tangent.y && tangent.x <= tangent.z {
