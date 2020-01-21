@@ -463,7 +463,7 @@ macro_rules! impl_uniform_input_detail {
         #[derive(Copy, Clone, Debug)]
         pub struct MyUniforms {
             $(
-                $field: $type,
+                pub $field: $type,
             )*
         }
 
@@ -534,7 +534,7 @@ macro_rules! impl_uniform_input {
             #[derive(Copy, Clone, Debug)]
             pub struct MyUniforms<$life> {
                 $(
-                    $field: $type,
+                    pub $field: $type,
                 )*
             }
 
