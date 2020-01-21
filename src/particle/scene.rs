@@ -168,6 +168,6 @@ const FRAGMENT_SHADER: &str = "
         float circle = max(1 - dot(vertex_in.uv, vertex_in.uv), 0);
 
         target = vertex_in.color;
-        target.w *= circle;
+        target.a *= circle;
     }
 ";

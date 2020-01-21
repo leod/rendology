@@ -20,8 +20,6 @@ use crate::Drawable;
 
 pub use scene::{Params, Particle, Shader};
 
-pub const PARTICLES_PER_BUFFER: usize = 10000;
-
 /// Keeps a buffer of particle vertices.
 struct Buffer {
     buffer: glium::VertexBuffer<<Particle as InstanceInput>::Vertex>,
@@ -50,8 +48,8 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            particles_per_buffer: 10000,
-            num_buffers: 10,
+            particles_per_buffer: 20000,
+            num_buffers: 30,
         }
     }
 }
