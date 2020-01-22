@@ -3,6 +3,7 @@
 - Remove dependency on `genmesh` and `obj` crates ([#14](https://github.com/leod/rendology/pull/14))
 - Base shadow map core on given fragment core ([#15](https://github.com/leod/rendology/pull/15))
 - Move associated types of SceneCore into new trait CoreInput ([#16](https://github.com/leod/rendology/pull/16))
+- Initial implementation of particles ([#17](https://github.com/leod/rendology/pull/17))
 
 ## Version 0.4.1 (2019-12-17)
 - Fix bug in shadow mapping on Intel GPUs ([#12](https://github.com/leod/rendology/pull/12))
