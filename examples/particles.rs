@@ -260,6 +260,7 @@ fn scene(time: f32, dt: f32) -> Scene {
             velocity: velocity * radius,
             color: na::Vector3::new(radius / 2.0, radius / 8.0, 0.0),
             size: na::Vector2::new(0.015, 0.015),
+            friction: 0.5,
         };
 
         scene.new_particles.add(particle);
