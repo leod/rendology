@@ -23,6 +23,7 @@ pub struct Particle {
     pub velocity: na::Vector3<f32>,
     pub color: na::Vector3<f32>,
     pub size: na::Vector2<f32>,
+    pub friction: f32,
 }
 
 impl_instance_input!(
@@ -34,6 +35,7 @@ impl_instance_input!(
         particle_velocity: [f32; 3] = self.velocity,
         particle_color: [f32; 3] = self.color,
         particle_size: [f32; 2] = self.size,
+        particle_friction: f32 = self.friction,
     },
 );
 
@@ -82,6 +84,7 @@ const VERTEX_SHADER: &str = "
     in vec3 particle_velocity;
     in vec3 particle_color;
     in vec2 particle_size;
+    in float particle_friction;
 
     out VertexData {
         vec4 color;
@@ -92,8 +95,9 @@ const VERTEX_SHADER: &str = "
         float delta_time = params_time - particle_spawn_time;
 
         // Integrate velocity.
-        vec3 current_pos = particle_start_pos + particle_velocity * delta_time;
-
+        vec3 current_pos = particle_start_pos
+            + particle_velocity * delta_time
+            - 0.5 * particle_friction * delta_time * delta_time * normalize(particle_velocity); 
         gl_Position = context_camera_view * vec4(current_pos, 1);
 
         // Forward particle properties to geometry shader.
