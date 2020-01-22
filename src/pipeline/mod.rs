@@ -17,7 +17,7 @@ use glium::texture::{
 use glium::{uniform, Program, Surface};
 
 use crate::fxaa::{self, FXAA};
-use crate::scene::SceneCore;
+use crate::scene::{BuildProgram, CoreInput, SceneCore};
 use crate::shader::{InstancingMode, ToUniforms};
 use crate::{shader, Context, DrawError, Drawable, Light, ScreenQuad};
 
@@ -158,15 +158,14 @@ impl Pipeline {
     ) -> Result<PlainScenePass<C>, crate::CreationError>
     where
         F: glium::backend::Facade,
-        C: SceneCore,
+        C: CoreInput + BuildProgram,
     {
-        let shader_core = scene_core.scene_core();
-        let program = shader_core.build_program(facade, instancing_mode)?;
+        let program = scene_core.build_program(facade, instancing_mode)?;
 
         Ok(PlainScenePass {
             instancing_mode,
             program,
-            shader_core,
+            _phantom: std::marker::PhantomData,
         })
     }
 
@@ -486,7 +485,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> PlainScenePassStep<'a, F, S> {
         draw_params: &glium::DrawParameters,
     ) -> Result<Self, DrawError>
     where
-        C: SceneCore,
+        C: CoreInput,
         D: Drawable<C::Instance, C::Vertex>,
         P: shader::input::CompatibleWith<C::Params>,
     {
@@ -532,7 +531,7 @@ impl<'a, F: glium::backend::Facade, S: Surface> PlainScenePassAfterPostprocessSt
         draw_params: &glium::DrawParameters,
     ) -> Result<Self, DrawError>
     where
-        C: SceneCore,
+        C: CoreInput,
         D: Drawable<C::Instance, C::Vertex>,
         P: shader::input::CompatibleWith<C::Params>,
     {

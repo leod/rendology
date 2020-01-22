@@ -1,5 +1,5 @@
 use crate::pipeline::Context;
-use crate::scene::SceneCore;
+use crate::scene::{CoreInput, SceneCore};
 use crate::shader::{InstancingMode, ToUniforms};
 use crate::{screen_quad, shader, DrawError};
 
@@ -31,14 +31,11 @@ pub struct ShadedScenePass<C: SceneCore> {
     pub shader_core: shader::Core<(Context, C::Params), C::Instance, C::Vertex>,
 }
 
-pub struct PlainScenePass<C: SceneCore> {
+pub struct PlainScenePass<C: CoreInput> {
     pub instancing_mode: InstancingMode,
     pub program: glium::Program,
 
-    /// The transformed shader core that was used for building the `program`.
-    /// Currently this is basically just phantom data.
-    #[allow(dead_code)]
-    pub shader_core: shader::Core<(Context, C::Params), C::Instance, C::Vertex>,
+    pub _phantom: std::marker::PhantomData<C>,
 }
 
 pub trait RenderPassComponent {
