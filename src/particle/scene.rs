@@ -26,6 +26,20 @@ pub struct Particle {
     pub friction: f32,
 }
 
+impl Particle {
+    pub fn dead() -> Self {
+        Self {
+            spawn_time: -1.0,
+            life_duration: 0.0,
+            start_pos: na::Point3::origin(),
+            velocity: na::Vector3::zeros(),
+            color: na::Vector3::zeros(),
+            size: na::Vector2::zeros(),
+            friction: 0.0,
+        }
+    }
+}
+
 impl_instance_input!(
     Particle,
     self => {

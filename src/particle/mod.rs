@@ -153,6 +153,11 @@ impl System {
     pub fn clear(&mut self) {
         for buffer in self.buffers.iter_mut() {
             buffer.max_death_time = 0.0;
+
+            let mut mapping = buffer.buffer.map_write();
+            for i in 0..mapping.len() {
+                mapping.set(i, Particle::dead().to_vertex());
+            }
         }
     }
 }
