@@ -119,10 +119,9 @@ pub fn main_light_screen_quad_core(
     if have_shadows {
         fragment = fragment
             .with_extra_uniform("shadow_texture", UniformType::Sampler2d)
-            .with_body(
-                "
-                radiance *= texture(shadow_texture, tex_coord).r;
-                ",
+            .with_out_expr(
+                "f_color",
+                "vec4(f_color.rgb * texture(shadow_texture, tex_coord).r, 1.0)",
             );
     }
 
