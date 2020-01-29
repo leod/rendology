@@ -265,7 +265,8 @@ fn does_core_use_variable(defs: &str, body: &[BodyElem], var_name: &str) -> bool
     };
 
     // Putting braces around allows parsing compound statements.
-    let compiled_body = "{".to_owned() + &compile_body(body) + "}";
+    let filtered_body = body.iter().filter(|elem| !elem.is_assignment_of(var_name));
+    let compiled_body = "{".to_owned() + &compile_body(filtered_body) + "}";
 
     let mut body = glsl::syntax::Statement::parse(compiled_body).unwrap();
     body.visit(&mut visitor);
@@ -359,9 +360,7 @@ where
                         info!("Removing unused local vertex output {}", out_name);
 
                         vertex.out_defs.remove(out_name);
-                        fragment
-                            .body
-                            .retain(|elem| !elem.is_assignment_of(out_name));
+                        vertex.body.retain(|elem| !elem.is_assignment_of(out_name));
 
                         changed = true;
                     }
@@ -522,13 +521,12 @@ fn compile_instance_input<P: UniformInput>(mode: InstancingMode) -> String {
     }
 }
 
-fn compile_body(body: &[BodyElem]) -> String {
-    body.iter()
-        .map(|elem| match elem {
-            BodyElem::Block(body) => body.clone(),
-            BodyElem::Assignment(name, expr) => format!("    {} = {};\n", name, expr),
-        })
-        .collect()
+fn compile_body<'a>(body: impl Iterator<Item = &'a BodyElem>) -> String {
+    body.map(|elem| match elem {
+        BodyElem::Block(body) => body.clone(),
+        BodyElem::Assignment(name, expr) => format!("    {} = {};\n", name, expr),
+    })
+    .collect()
 }
 
 fn attribute_type(t: AttributeType) -> Type {
@@ -578,7 +576,7 @@ where
         s += "\n";
 
         s += "void main() {\n";
-        s += &compile_body(&self.body);
+        s += &compile_body(self.body.iter());
         s += "}\n";
 
         s
@@ -607,7 +605,7 @@ where
         s += "\n";
 
         s += "void main() {\n";
-        s += &compile_body(&self.body);
+        s += &compile_body(self.body.iter());
         s += "}\n";
 
         s
