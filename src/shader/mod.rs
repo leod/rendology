@@ -45,9 +45,23 @@ pub struct VertexCore<P, I, V> {
     pub extra_uniforms: BTreeMap<VariableName, UniformType>,
     pub out_defs: BTreeMap<VariableName, VertexOutDef>,
     pub defs: GLSL,
-    pub body: GLSL,
-    pub out_exprs: Vec<(VariableName, GLSL)>,
+    pub body: Vec<BodyElem>,
     pub phantom: PhantomData<(P, I, V)>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BodyElem {
+    Block(GLSL),
+    Assignment(VariableName, GLSL),
+}
+
+impl BodyElem {
+    pub fn is_assignment_of(&self, name: &str) -> bool {
+        match self {
+            BodyElem::Block(_) => false,
+            BodyElem::Assignment(assignment_name, _) => *assignment_name == *name,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -56,8 +70,7 @@ pub struct FragmentCore<P> {
     pub in_defs: BTreeMap<VariableName, VertexOutDef>,
     pub out_defs: BTreeMap<VariableName, FragmentOutDef>,
     pub defs: GLSL,
-    pub body: GLSL,
-    pub out_exprs: Vec<(VariableName, GLSL)>,
+    pub body: Vec<BodyElem>,
     pub phantom: PhantomData<P>,
 }
 
@@ -85,8 +98,7 @@ impl<P, I, V> Default for VertexCore<P, I, V> {
             extra_uniforms: BTreeMap::new(),
             out_defs: BTreeMap::new(),
             defs: "".into(),
-            body: "".into(),
-            out_exprs: Vec::new(),
+            body: Vec::new(),
             phantom: PhantomData,
         }
     }
@@ -99,8 +111,7 @@ impl<P> Default for FragmentCore<P> {
             in_defs: BTreeMap::new(),
             out_defs: BTreeMap::new(),
             defs: "".into(),
-            body: "".into(),
-            out_exprs: Vec::new(),
+            body: Vec::new(),
             phantom: PhantomData,
         }
     }
@@ -132,7 +143,7 @@ impl<P, I, V> VertexCore<P, I, V> {
     }
 
     pub fn with_body(mut self, body: &str) -> Self {
-        self.body += body;
+        self.body.push(BodyElem::Block(body.into()));
         self
     }
 
@@ -144,13 +155,15 @@ impl<P, I, V> VertexCore<P, I, V> {
             self.out_defs.insert(name.into(), def);
         }
 
-        self.out_exprs.push((name.into(), expr.into()));
+        self.body
+            .push(BodyElem::Assignment(name.into(), expr.into()));
         self
     }
 
     pub fn with_out_expr(mut self, name: &str, expr: &str) -> Self {
         assert!(self.has_out(name));
-        self.out_exprs.push((name.into(), expr.into()));
+        self.body
+            .push(BodyElem::Assignment(name.into(), expr.into()));
         self
     }
 
@@ -196,7 +209,7 @@ impl<P> FragmentCore<P> {
     }
 
     pub fn with_body(mut self, body: &str) -> Self {
-        self.body += body;
+        self.body.push(BodyElem::Block(body.into()));
         self
     }
 
@@ -209,13 +222,15 @@ impl<P> FragmentCore<P> {
         assert!(!self.has_out(name));
 
         self.out_defs.insert(name.into(), def);
-        self.out_exprs.push((name.into(), expr.into()));
+        self.body
+            .push(BodyElem::Assignment(name.into(), expr.into()));
         self
     }
 
     pub fn with_out_expr(mut self, name: &str, expr: &str) -> Self {
         assert!(self.has_out(name));
-        self.out_exprs.push((name.into(), expr.into()));
+        self.body
+            .push(BodyElem::Assignment(name.into(), expr.into()));
         self
     }
 
@@ -225,12 +240,7 @@ impl<P> FragmentCore<P> {
     }
 }
 
-fn does_core_use_variable(
-    defs: &str,
-    body: &str,
-    out_exprs: &[(String, GLSL)],
-    var_name: &str,
-) -> bool {
+fn does_core_use_variable(defs: &str, body: &[BodyElem], var_name: &str) -> bool {
     struct Visitor<'a> {
         var_name: &'a str,
         is_used: bool,
@@ -254,21 +264,11 @@ fn does_core_use_variable(
         is_used: false,
     };
 
-    for (out_name, out_expr) in out_exprs {
-        if out_name != var_name {
-            glsl::syntax::Expr::parse(out_expr)
-                .unwrap()
-                .visit(&mut visitor);
-        }
-    }
+    // Putting braces around allows parsing compound statements.
+    let compiled_body = "{".to_owned() + &compile_body(body) + "}";
 
-    if !body.is_empty() {
-        // Putting braces around allows parsing compound statements.
-        let body = "{".to_owned() + body + "}";
-
-        let mut body = glsl::syntax::Statement::parse(body).unwrap();
-        body.visit(&mut visitor);
-    }
+    let mut body = glsl::syntax::Statement::parse(compiled_body).unwrap();
+    body.visit(&mut visitor);
 
     if !defs.is_empty() {
         let mut defs = glsl::syntax::TranslationUnit::parse(defs).unwrap();
@@ -298,18 +298,15 @@ where
 
             for (out_name, FragmentOutDef(_, q)) in fragment.out_defs.clone().iter() {
                 if *q == FragmentOutQualifier::Local {
-                    let is_used = does_core_use_variable(
-                        &fragment.defs,
-                        &fragment.body,
-                        &fragment.out_exprs,
-                        &out_name,
-                    );
+                    let is_used = does_core_use_variable(&fragment.defs, &fragment.body, &out_name);
 
                     if !is_used {
                         info!("Removing unused local fragment output {}", out_name);
 
                         fragment.out_defs.remove(out_name);
-                        fragment.out_exprs.retain(|(name, _)| name != out_name);
+                        fragment
+                            .body
+                            .retain(|elem| !elem.is_assignment_of(out_name));
 
                         changed = true;
                     }
@@ -323,12 +320,7 @@ where
             .clone()
             .into_iter()
             .filter(|(in_name, _)| {
-                let r = does_core_use_variable(
-                    &fragment.defs,
-                    &fragment.body,
-                    &fragment.out_exprs,
-                    &in_name,
-                );
+                let r = does_core_use_variable(&fragment.defs, &fragment.body, &in_name);
 
                 if !r {
                     info!("Removing unused fragment input {}", in_name);
@@ -361,18 +353,15 @@ where
 
             for (out_name, VertexOutDef(_, q)) in vertex.out_defs.clone().iter() {
                 if *q == VertexOutQualifier::Local {
-                    let is_used = does_core_use_variable(
-                        &vertex.defs,
-                        &vertex.body,
-                        &vertex.out_exprs,
-                        &out_name,
-                    );
+                    let is_used = does_core_use_variable(&vertex.defs, &vertex.body, &out_name);
 
                     if !is_used {
                         info!("Removing unused local vertex output {}", out_name);
 
                         vertex.out_defs.remove(out_name);
-                        vertex.out_exprs.retain(|(name, _)| name != out_name);
+                        fragment
+                            .body
+                            .retain(|elem| !elem.is_assignment_of(out_name));
 
                         changed = true;
                     }
@@ -533,11 +522,13 @@ fn compile_instance_input<P: UniformInput>(mode: InstancingMode) -> String {
     }
 }
 
-fn compile_out_assignments(exprs: impl Iterator<Item = (VariableName, GLSL)>) -> String {
-    exprs
-        .map(|(name, expr)| format!("    {} = {};\n", name, expr))
-        .collect::<Vec<_>>()
-        .join("")
+fn compile_body(body: &[BodyElem]) -> String {
+    body.iter()
+        .map(|elem| match elem {
+            BodyElem::Block(body) => body.clone(),
+            BodyElem::Assignment(name, expr) => format!("    {} = {};\n", name, expr),
+        })
+        .collect()
 }
 
 fn attribute_type(t: AttributeType) -> Type {
@@ -587,9 +578,7 @@ where
         s += "\n";
 
         s += "void main() {\n";
-        s += &self.body;
-        s += "\n";
-        s += &compile_out_assignments(self.out_exprs.iter().cloned());
+        s += &compile_body(&self.body);
         s += "}\n";
 
         s
@@ -618,9 +607,7 @@ where
         s += "\n";
 
         s += "void main() {\n";
-        s += &self.body;
-        s += "\n";
-        s += &compile_out_assignments(self.out_exprs.iter().cloned());
+        s += &compile_body(&self.body);
         s += "}\n";
 
         s
