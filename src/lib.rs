@@ -11,6 +11,7 @@ mod scene;
 mod stage;
 
 pub mod basic_obj;
+pub mod dither;
 pub mod fxaa;
 pub mod line;
 pub mod particle;

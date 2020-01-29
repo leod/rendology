@@ -234,17 +234,10 @@ impl DeferredShading {
 
         light_buffer.clear_color(0.0, 0.0, 0.0, 1.0);
 
-        let textures = (
-            &uniform! {
-                position_texture: &self.scene_textures[0],
-                normal_texture: &self.scene_textures[1],
-            },
-            &self.shadow_texture.as_ref().map(|shadow_texture| {
-                plain_uniforms! {
-                    shadow_texture: shadow_texture,
-                }
-            }),
-        );
+        let textures = &plain_uniforms! {
+            position_texture: &self.scene_textures[0],
+            normal_texture: &self.scene_textures[1],
+        };
 
         self.light_instances.clear();
         for light in lights {
@@ -280,7 +273,15 @@ impl DeferredShading {
                     viewport_size: camera.viewport_size,
                 };
 
-                let uniforms = (&textures, (no_camera, &light));
+                let textures_with_shadow = (
+                    &textures,
+                    &self.shadow_texture.as_ref().map(|shadow_texture| {
+                        plain_uniforms! {
+                            shadow_texture: shadow_texture,
+                        }
+                    }),
+                );
+                let uniforms = (textures_with_shadow, (no_camera, &light));
 
                 light_buffer.draw(
                     &self.screen_quad.vertex_buffer,
