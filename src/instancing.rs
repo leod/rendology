@@ -75,7 +75,11 @@ impl<I: InstanceInput> Instancing<I> {
         // Write instance data into vertex buffers. We move through the buffers
         // that we have, filling them up sequentially.
         for buffer in &mut self.buffers {
-            buffer.clear();
+            if buffer.num_used > 0 {
+                buffer.buffer.invalidate();
+                buffer.buffer = glium::VertexBuffer::empty_dynamic(facade, INSTANCES_PER_BUFFER)?;
+                buffer.clear();
+            }
         }
 
         let mut cur_buffer = 0;

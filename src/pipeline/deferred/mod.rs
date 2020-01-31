@@ -9,7 +9,7 @@ use log::info;
 
 use nalgebra as na;
 
-use glium::{uniform, Surface, Texture2d};
+use glium::{Surface, Texture2d};
 
 use crate::shader::{self, InstanceInput, ToUniforms};
 use crate::{
