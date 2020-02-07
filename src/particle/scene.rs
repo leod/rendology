@@ -115,7 +115,7 @@ const VERTEX_SHADER: &str = "
         gl_Position = context_camera_view * vec4(current_pos, 1);
 
         // Forward particle properties to geometry shader.
-        vertex_out.color = vec4(particle_color, 1.0 - pow(delta_time / particle_life_duration, 10.0));
+        vertex_out.color = vec4(particle_color, 1.0 - pow(delta_time / particle_life_duration, 3.0));
         vertex_out.size = particle_size;
     }
 ";
@@ -142,7 +142,7 @@ const GEOMETRY_SHADER: &str = "
         // If the particle is alive, generate a camera-aligned quad.
         if (vertex_in[0].color.a > 0.0) {
             vec4 center = gl_in[0].gl_Position;
-            vec2 size = vertex_in[0].size;
+            vec2 size = vertex_in[0].size * vertex_in[0].color.a;
 
             gl_Position = context_camera_projection * (center + vec4(-size.x, -size.y, 0, 0));
             vertex_out.color = vertex_in[0].color;
