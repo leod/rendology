@@ -131,6 +131,7 @@ impl System {
                 .iter()
                 .map(|particle| particle.particle_spawn_time + particle.particle_life_duration)
                 .fold(0.0, f32::max);
+            assert!(!new_max_death_time.is_nan());
 
             target_buffer.max_death_time = target_buffer.max_death_time.max(new_max_death_time);
 
