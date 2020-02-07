@@ -140,7 +140,7 @@ const GEOMETRY_SHADER: &str = "
 
     void main() {
         // If the particle is alive, generate a camera-aligned quad.
-        if (vertex_in[0].color.a > 0.0) {
+        if (vertex_in[0].color.a > 0.0 && vertex_in[0].color.a <= 1.0) {
             vec4 center = gl_in[0].gl_Position;
             vec2 size = vertex_in[0].size * vertex_in[0].color.a;
 
