@@ -24,7 +24,7 @@ impl_uniform_input!(
 #[derive(Debug, Clone)]
 pub struct Light {
     pub position: na::Point3<f32>,
-    pub attenuation: na::Vector3<f32>,
+    pub attenuation: na::Vector4<f32>,
     pub color: na::Vector3<f32>,
     pub is_main: bool,
     pub radius: f32,
@@ -34,9 +34,8 @@ impl_instance_input!(
     Light,
     self => {
         light_position: [f32; 3] = self.position.coords,
-        light_attenuation: [f32; 3] = self.attenuation,
+        light_attenuation: [f32; 4] = self.attenuation,
         light_color: [f32; 3] = self.color,
-        //light_is_main: Bool = self.is_main,
         light_radius: f32 = self.radius,
     },
 );
@@ -45,7 +44,7 @@ impl Default for Light {
     fn default() -> Self {
         Self {
             position: na::Point3::origin(),
-            attenuation: na::Vector3::zeros(),
+            attenuation: na::Vector4::zeros(),
             color: na::Vector3::zeros(),
             is_main: false,
             radius: 0.0,

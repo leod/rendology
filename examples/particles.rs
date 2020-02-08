@@ -223,7 +223,7 @@ fn scene(time: f32, dt: f32) -> Scene {
 
     scene.lights.push(Light {
         position: na::Point3::new(10.0, 10.0, 10.0),
-        attenuation: na::Vector3::new(1.0, 0.0, 0.0),
+        attenuation: na::Vector4::new(1.0, 0.0, 0.0, 0.0),
         color: na::Vector3::new(1.0, 1.0, 1.0),
         is_main: true,
         ..Default::default()
