@@ -210,6 +210,7 @@ impl DeferredShading {
     pub fn light_pass<F: glium::backend::Facade>(
         &mut self,
         facade: &F,
+        scene_depth_texture: &glium::texture::DepthTexture2d,
         camera: &Camera,
         lights: &[Light],
     ) -> Result<(), DrawError> {
@@ -229,8 +230,11 @@ impl DeferredShading {
             ..Default::default()
         };
 
-        let mut light_buffer =
-            glium::framebuffer::SimpleFrameBuffer::new(facade, &self.light_texture)?;
+        let mut light_buffer = glium::framebuffer::SimpleFrameBuffer::with_depth_buffer(
+            facade,
+            &self.light_texture,
+            scene_depth_texture,
+        )?;
 
         light_buffer.clear_color(0.0, 0.0, 0.0, 1.0);
 
@@ -245,15 +249,8 @@ impl DeferredShading {
                 continue;
             }
 
-            let i_max = light.color.x.max(light.color.y).max(light.color.z);
-            let radicand = light.attenuation.y.powi(2)
-                - 4.0
-                    * light.attenuation.z
-                    * (light.attenuation.x - i_max * 1.0 / self.config.light_min_threshold);
-            let radius = (-light.attenuation.y + radicand.sqrt()) / (2.0 * light.attenuation.z);
-
             let light = Light {
-                radius,
+                radius: light_radius(self.config.light_min_threshold, light),
                 ..light.clone()
             };
 
@@ -303,6 +300,11 @@ impl DeferredShading {
         // it is exactly.)
         let draw_params = glium::DrawParameters {
             backface_culling: glium::draw_parameters::BackfaceCullingMode::CullCounterClockwise,
+            depth: glium::Depth {
+                test: glium::DepthTest::IfMore,
+                write: false,
+                ..Default::default()
+            },
             ..draw_params.clone()
         };
 
@@ -341,4 +343,20 @@ impl DeferredShading {
             size.1,
         )?)
     }
+}
+
+fn light_radius(min_threshold: f32, light: &Light) -> f32 {
+    let i_max = light.color.x.max(light.color.y).max(light.color.z);
+
+    let radicand = light.attenuation.y.powi(2)
+        - 4.0 * light.attenuation.z * (light.attenuation.x - i_max * 1.0 / min_threshold);
+    let quadratic_radius = (-light.attenuation.y + radicand.sqrt()) / (2.0 * light.attenuation.z);
+
+    let exp_radius = if light.attenuation.w > 0.0 {
+        2.0 * (-(min_threshold / i_max).ln() / light.attenuation.w).sqrt()
+    } else {
+        0.0
+    };
+
+    quadratic_radius.max(exp_radius)
 }

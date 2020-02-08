@@ -71,7 +71,7 @@ const V_LIGHT_COLOR: (&str, shader::VertexOutDef) = (
 
 const V_LIGHT_ATTENUATION: (&str, shader::VertexOutDef) = (
     "v_light_attenuation",
-    shader::VertexOutDef(shader::Type::FloatVec3, shader::VertexOutQualifier::Flat),
+    shader::VertexOutDef(shader::Type::FloatVec4, shader::VertexOutQualifier::Flat),
 );
 
 fn light_fragment_core() -> shader::FragmentCore<Camera> {
@@ -92,13 +92,19 @@ fn light_fragment_core() -> shader::FragmentCore<Camera> {
             float light_distance = sqrt(light_distance_sq);
 
             float diffuse = max(dot(normal, light_vector / light_distance), 0.0);
-            float attenuation = 1.0 / dot(
-                v_light_attenuation,
+            float attenuation = dot(
+                v_light_attenuation.xyz,
                 vec3(1, light_distance, light_distance_sq)
-            );
-            diffuse *= attenuation;
+            ) * exp(v_light_attenuation.w * light_distance_sq);
+            diffuse /= attenuation;
+
+            // Discarding here means that additive blending does not need to
+            // be performed. This got me a speed-up in scenes with many lights.
+            if (diffuse < 0.0001)
+                discard;
 
             float radiance = diffuse;
+            //float radiance = 1.0;
             ",
         )
         .with_out(shader::defs::F_COLOR, "vec4(v_light_color * radiance, 1.0)")
@@ -142,10 +148,12 @@ pub fn light_object_core() -> shader::Core<Camera, Light, basic_obj::Vertex> {
             ",
         );
 
-    shader::Core {
-        vertex,
-        fragment: light_fragment_core(),
-    }
+    let fragment = light_fragment_core();
+
+    // Uncomment the following line to debug light volumes:
+    //let fragment = fragment.with_out_expr("f_color", "vec4(1, 1, 1, 1)");
+
+    shader::Core { vertex, fragment }
 }
 
 /// Composition shader core transform for composing our buffers.
