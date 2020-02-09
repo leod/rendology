@@ -5,7 +5,7 @@ use crate::{Drawable, Mesh};
 
 pub use crate::error::{CreationError, DrawError};
 
-pub const INSTANCES_PER_BUFFER: usize = 1000;
+pub const INSTANCES_PER_BUFFER: usize = 10000;
 
 struct Buffer<V: Copy> {
     buffer: glium::VertexBuffer<V>,

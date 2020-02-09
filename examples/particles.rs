@@ -97,7 +97,6 @@ impl Pipeline {
 
         let particle_params = particle::Params { time: scene.time };
         let particle_draw_params = glium::DrawParameters {
-            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
             depth: glium::Depth {
                 test: glium::DepthTest::IfLessOrEqual,
                 write: false,
@@ -244,7 +243,7 @@ fn scene(time: f32, dt: f32) -> Scene {
     let x_unit = tangent.cross(&smallest_unit).normalize();
     let y_unit = tangent.cross(&x_unit).normalize();
 
-    let spawn_per_sec = (20000.0 * 30.0) / 3.0;
+    let spawn_per_sec = 20000.0 * 30.0;
 
     for _ in 0..(spawn_per_sec * dt) as usize {
         let radius = rand::random::<f32>() * 1.41;
@@ -256,10 +255,10 @@ fn scene(time: f32, dt: f32) -> Scene {
         let particle = Particle {
             spawn_time: time,
             life_duration: 3.0,
-            start_pos: pos,
-            velocity: velocity * radius,
+            start_pos: pos + velocity * 1.0,
+            velocity,
             color: na::Vector3::new(radius / 2.0, radius / 8.0, 0.0),
-            size: na::Vector2::new(0.015, 0.015),
+            size: 0.015,
             friction: 0.5,
         };
 
@@ -270,19 +269,20 @@ fn scene(time: f32, dt: f32) -> Scene {
 }
 
 fn render_context(target_size: (u32, u32)) -> rendology::Context {
+    let projection = na::Perspective3::new(
+        target_size.0 as f32 / target_size.1 as f32,
+        60.0f32.to_radians(),
+        0.1,
+        1000.0,
+    )
+    .to_homogeneous();
     let camera = rendology::Camera {
         view: na::Matrix4::look_at_rh(
             &na::Point3::new(9.0, -5.0, 7.0),
             &na::Point3::new(0.0, 0.0, 0.0),
             &na::Vector3::new(0.0, 0.0, 1.0),
         ),
-        projection: na::Perspective3::new(
-            target_size.0 as f32 / target_size.1 as f32,
-            60.0f32.to_radians(),
-            0.1,
-            1000.0,
-        )
-        .to_homogeneous(),
+        projection,
         viewport_size: na::Vector2::new(target_size.0 as f32, target_size.1 as f32),
     };
 

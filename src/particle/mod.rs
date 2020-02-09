@@ -48,8 +48,8 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            particles_per_buffer: 20000,
-            num_buffers: 30,
+            particles_per_buffer: 10000,
+            num_buffers: 100,
         }
     }
 }
@@ -105,6 +105,9 @@ impl System {
     }
 
     pub fn spawn(&mut self, mut particles: &[<Particle as InstanceInput>::Vertex]) {
+        /*self.next_index.0 = (self.next_index.0 + 1) % self.buffers.len();
+        self.next_index.1 = 0;*/
+
         // Copy new particles, filling up the ring buffer.
         while !particles.is_empty() {
             // By our invariant, `self.next_index` always is valid.
