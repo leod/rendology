@@ -17,7 +17,7 @@ where
     V: glium::vertex::Vertex,
 {
     fn create<F: glium::backend::Facade>(facade: &F) -> Result<Self, CreationError> {
-        let buffer = glium::VertexBuffer::empty_dynamic(facade, INSTANCES_PER_BUFFER)?;
+        let buffer = glium::VertexBuffer::empty(facade, INSTANCES_PER_BUFFER)?;
 
         Ok(Self {
             buffer,
@@ -77,7 +77,7 @@ impl<I: InstanceInput> Instancing<I> {
         for buffer in &mut self.buffers {
             if buffer.num_used > 0 {
                 buffer.buffer.invalidate();
-                buffer.buffer = glium::VertexBuffer::empty_dynamic(facade, INSTANCES_PER_BUFFER)?;
+                buffer.buffer = glium::VertexBuffer::empty(facade, INSTANCES_PER_BUFFER)?;
                 buffer.clear();
             }
         }
