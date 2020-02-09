@@ -115,7 +115,6 @@ const VERTEX_SHADER: &str = "
         vec3 current_pos = particle_start_pos
             + particle_velocity * delta_time
             - 0.5 * particle_friction * delta_time * delta_time * normalize(particle_velocity);
-        //vec3 current_pos = particle_start_pos;
         gl_Position = context_camera_view * vec4(current_pos, 1);
 
         // Forward particle properties to geometry shader.
@@ -167,6 +166,8 @@ const GEOMETRY_SHADER: &str = "
             vertex_out.color = vertex_in[0].color;
             vertex_out.uv = vec2(1, 1);
             EmitVertex();
+
+            EndPrimitive();
         }
     }
 ";

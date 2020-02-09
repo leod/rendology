@@ -30,7 +30,7 @@ struct Buffer {
 
 impl Buffer {
     fn create<F: glium::backend::Facade>(facade: &F, size: usize) -> Result<Self, CreationError> {
-        let buffer = glium::VertexBuffer::empty_dynamic(facade, size)?;
+        let buffer = glium::VertexBuffer::empty(facade, size)?;
 
         Ok(Self {
             buffer,
@@ -88,12 +88,17 @@ impl System {
             .map(|_| Buffer::create(facade, config.particles_per_buffer))
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(Self {
+        let mut system = Self {
             config: config.clone(),
             buffers,
             next_index: (0, 0),
             current_time: 0.0,
-        })
+        };
+
+        // Make sure to initialize buffer memory
+        system.clear();
+
+        Ok(system)
     }
 
     pub fn shader(&self) -> Shader {
