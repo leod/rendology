@@ -30,7 +30,7 @@ struct Buffer {
 
 impl Buffer {
     fn create<F: glium::backend::Facade>(facade: &F, size: usize) -> Result<Self, CreationError> {
-        let buffer = glium::VertexBuffer::empty_dynamic(facade, size)?;
+        let buffer = glium::VertexBuffer::empty(facade, size)?;
 
         Ok(Self {
             buffer,
@@ -48,8 +48,8 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            particles_per_buffer: 20000,
-            num_buffers: 30,
+            particles_per_buffer: 10000,
+            num_buffers: 100,
         }
     }
 }
@@ -88,12 +88,17 @@ impl System {
             .map(|_| Buffer::create(facade, config.particles_per_buffer))
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(Self {
+        let mut system = Self {
             config: config.clone(),
             buffers,
             next_index: (0, 0),
             current_time: 0.0,
-        })
+        };
+
+        // Make sure to initialize buffer memory
+        system.clear();
+
+        Ok(system)
     }
 
     pub fn shader(&self) -> Shader {
@@ -105,6 +110,9 @@ impl System {
     }
 
     pub fn spawn(&mut self, mut particles: &[<Particle as InstanceInput>::Vertex]) {
+        /*self.next_index.0 = (self.next_index.0 + 1) % self.buffers.len();
+        self.next_index.1 = 0;*/
+
         // Copy new particles, filling up the ring buffer.
         while !particles.is_empty() {
             // By our invariant, `self.next_index` always is valid.
@@ -131,6 +139,7 @@ impl System {
                 .iter()
                 .map(|particle| particle.particle_spawn_time + particle.particle_life_duration)
                 .fold(0.0, f32::max);
+            assert!(!new_max_death_time.is_nan());
 
             target_buffer.max_death_time = target_buffer.max_death_time.max(new_max_death_time);
 
