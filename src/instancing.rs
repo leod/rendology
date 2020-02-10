@@ -5,7 +5,7 @@ use crate::{Drawable, Mesh};
 
 pub use crate::error::{CreationError, DrawError};
 
-pub const INSTANCES_PER_BUFFER: usize = 1000;
+pub const INSTANCES_PER_BUFFER: usize = 10000;
 
 struct Buffer<V: Copy> {
     buffer: glium::VertexBuffer<V>,
@@ -17,7 +17,7 @@ where
     V: glium::vertex::Vertex,
 {
     fn create<F: glium::backend::Facade>(facade: &F) -> Result<Self, CreationError> {
-        let buffer = glium::VertexBuffer::empty_dynamic(facade, INSTANCES_PER_BUFFER)?;
+        let buffer = glium::VertexBuffer::empty(facade, INSTANCES_PER_BUFFER)?;
 
         Ok(Self {
             buffer,
@@ -75,7 +75,11 @@ impl<I: InstanceInput> Instancing<I> {
         // Write instance data into vertex buffers. We move through the buffers
         // that we have, filling them up sequentially.
         for buffer in &mut self.buffers {
-            buffer.clear();
+            if buffer.num_used > 0 {
+                buffer.buffer.invalidate();
+                buffer.buffer = glium::VertexBuffer::empty(facade, INSTANCES_PER_BUFFER)?;
+                buffer.clear();
+            }
         }
 
         let mut cur_buffer = 0;

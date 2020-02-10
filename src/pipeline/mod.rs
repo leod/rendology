@@ -369,7 +369,12 @@ impl<'a, F: glium::backend::Facade, S: Surface> ShadedScenePassStep<'a, F, S> {
         if let Some(deferred_shading) = components.deferred_shading.as_mut() {
             profile!("light_pass");
 
-            deferred_shading.light_pass(self.0.facade, &self.0.context.camera, lights)?;
+            deferred_shading.light_pass(
+                self.0.facade,
+                &pipeline.scene_depth_texture,
+                &self.0.context.camera,
+                lights,
+            )?;
         }
 
         // Blur the glow texture

@@ -6,6 +6,7 @@
 - Initial implementation of particles ([#17](https://github.com/leod/rendology/pull/17), [#19](https://github.com/leod/rendology/pull/19))
 - Add a shader transform for transparency with dithering ([#20](https://github.com/leod/rendology/pull/20))
 - Change shader compilation so that output assignments can be evaluated before bodies ([#20](https://github.com/leod/rendology/pull/20))
+- Performance tuning ([#21](https://github.com/leod/rendology/pull/21))
 
 ## Version 0.4.1 (2019-12-17)
 - Fix bug in shadow mapping on Intel GPUs ([#12](https://github.com/leod/rendology/pull/12))

@@ -347,7 +347,7 @@ fn scene(time: f32) -> Scene {
 
         scene.lights.push(Light {
             position: orbit_transform.transform_point(&na::Point3::origin()),
-            attenuation: na::Vector3::new(1.0, 6.0, 30.0),
+            attenuation: na::Vector4::new(1.0, 6.0, 30.0, 0.0),
             color: 40.0 * na::Vector3::new(color.x, color.y, color.z),
             is_main: false,
             ..Default::default()
@@ -361,7 +361,7 @@ fn scene(time: f32) -> Scene {
 
     scene.lights.push(Light {
         position: na::Point3::new(1.0, 1.0, 10.0),
-        attenuation: na::Vector3::new(1.0, 0.0, 0.0),
+        attenuation: na::Vector4::new(1.0, 0.0, 0.0, 0.0),
         color: na::Vector3::new(0.02, 0.02, 0.02),
         is_main: true,
         ..Default::default()
