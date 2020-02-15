@@ -25,10 +25,19 @@ pub fn glow_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader::
 
 /// Shader core for non-glowing objects. This is necessary because otherwise
 /// glowing objects will glow through non-glowing objects.
-///
-/// TODO: Figure out if we can have glow be an uniform instead.
 pub fn no_glow_map_core_transform<P, I, V>(core: shader::Core<P, I, V>) -> shader::Core<P, I, V> {
     let fragment = core.fragment.with_out(F_GLOW_COLOR, "vec3(0.0, 0.0, 0.0)");
+
+    shader::Core {
+        vertex: core.vertex,
+        fragment,
+    }
+}
+
+pub fn brighten_color_core_transform<P, I, V>(
+    core: shader::Core<P, I, V>,
+) -> shader::Core<P, I, V> {
+    let fragment = core.fragment.with_out_expr("f_color", "2.0 * f_color");
 
     shader::Core {
         vertex: core.vertex,
