@@ -109,6 +109,12 @@ impl Components {
                 // Whoopsie there goes the "abstraction", heh. All good though.
                 shader_core = glow::shaders::no_glow_map_core_transform(shader_core);
             }
+        } else {
+            if setup.draw_glowing {
+                // Even with glow effect disabled, we still want to get the
+                // brighter colors.
+                shader_core = glow::shaders::brighten_color_core_transform(shader_core);
+            }
         }
 
         if let Some(shadow_mapping) = self.shadow_mapping.as_ref() {
