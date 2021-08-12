@@ -1,7 +1,16 @@
 use std::time::Instant;
 
 use floating_duration::TimeAsFloat;
-use glium::{glutin, Surface};
+use glium::{
+    glutin::{
+        self,
+        dpi::PhysicalSize,
+        event::{Event, WindowEvent},
+        event_loop::{ControlFlow, EventLoop},
+        window::WindowBuilder,
+    },
+    Surface,
+};
 use nalgebra as na;
 
 use rendology::{
@@ -99,10 +108,10 @@ fn main() {
     simple_logger::init_with_level(log::Level::Info).unwrap();
 
     // Initialize glium
-    let mut events_loop = glutin::EventsLoop::new();
+    let events_loop = EventLoop::new();
     let display = {
-        let window_builder = glutin::WindowBuilder::new()
-            .with_dimensions(WINDOW_SIZE.into())
+        let window_builder = WindowBuilder::new()
+            .with_inner_size(PhysicalSize::new(WINDOW_SIZE.0, WINDOW_SIZE.1))
             .with_title("Rendology example: Cube");
         let context_builder = glutin::ContextBuilder::new();
         glium::Display::new(window_builder, context_builder, &events_loop).unwrap()
@@ -112,17 +121,19 @@ fn main() {
     let mut pipeline = Pipeline::create(&display, &Default::default()).unwrap();
 
     let start_time = Instant::now();
-    let mut quit = false;
-    while !quit {
-        events_loop.poll_events(|event| {
-            if let glutin::Event::WindowEvent {
-                event: glutin::WindowEvent::CloseRequested,
-                ..
-            } = event
-            {
-                quit = true;
-            }
-        });
+    events_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::Poll;
+        match event {
+            Event::LoopDestroyed => return,
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::CloseRequested => {
+                    *control_flow = ControlFlow::Exit;
+                    return
+                },
+                _ => (),
+            },
+            _ => (),
+        }
 
         let time = start_time.elapsed().as_fractional_secs() as f32;
         let scene = scene(time);
@@ -135,7 +146,7 @@ fn main() {
             .unwrap();
 
         target.finish().unwrap();
-    }
+    });
 }
 
 fn scene(time: f32) -> Scene {
