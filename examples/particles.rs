@@ -4,7 +4,21 @@ use std::time::Instant;
 
 use coarse_prof::profile;
 use floating_duration::TimeAsFloat;
-use glium::{glutin, Surface};
+use glium::{
+    glutin::{
+        self,
+        dpi::PhysicalSize,
+        event::{
+            Event,
+            ElementState,
+            VirtualKeyCode,
+            WindowEvent
+        },
+        event_loop::{ControlFlow, EventLoop},
+        window::WindowBuilder,
+    },
+    Surface,
+};
 use nalgebra as na;
 
 use rendology::particle::Particle;
@@ -146,10 +160,10 @@ fn main() {
     simple_logger::init_with_level(log::Level::Info).unwrap();
 
     // Initialize glium
-    let mut events_loop = glutin::EventsLoop::new();
+    let events_loop = EventLoop::new();
     let display = {
-        let window_builder = glutin::WindowBuilder::new()
-            .with_dimensions(WINDOW_SIZE.into())
+        let window_builder = WindowBuilder::new()
+            .with_inner_size(PhysicalSize::new(WINDOW_SIZE.0, WINDOW_SIZE.1))
             .with_title("Rendology example: Cube");
         let context_builder = glutin::ContextBuilder::new();
         glium::Display::new(window_builder, context_builder, &events_loop).unwrap()
@@ -160,30 +174,29 @@ fn main() {
 
     let start_time = Instant::now();
     let mut last_time = Instant::now();
-    let mut quit = false;
-    while !quit {
+    events_loop.run(move |event, _, control_flow| {
         profile!("frame");
+        *control_flow = ControlFlow::Poll;
 
-        events_loop.poll_events(|event| {
-            if let glutin::Event::WindowEvent {
-                event: glutin::WindowEvent::CloseRequested,
-                ..
-            } = event
-            {
-                quit = true;
-            } else if let glutin::Event::WindowEvent {
-                event: glutin::WindowEvent::KeyboardInput { input, .. },
-                ..
-            } = event
-            {
-                if input.state == glutin::ElementState::Pressed
-                    && input.virtual_keycode == Some(glutin::VirtualKeyCode::P)
-                {
-                    coarse_prof::write(&mut std::io::stdout()).unwrap();
-                    coarse_prof::reset();
-                }
-            }
-        });
+        match event {
+            Event::LoopDestroyed => return,
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::CloseRequested => {
+                    *control_flow = ControlFlow::Exit;
+                    return
+                },
+                WindowEvent::KeyboardInput { input, .. } => {
+                    if input.state == ElementState::Pressed
+                        && input.virtual_keycode == Some(VirtualKeyCode::P)
+                    {
+                        coarse_prof::write(&mut std::io::stdout()).unwrap();
+                        coarse_prof::reset();
+                    }
+                },
+                _ => (),
+            },
+            _ => (),
+        }
 
         let time = start_time.elapsed().as_fractional_secs() as f32;
         let dt = last_time.elapsed().as_fractional_secs() as f32;
@@ -199,7 +212,7 @@ fn main() {
             .unwrap();
 
         target.finish().unwrap();
-    }
+    });
 }
 
 fn scene(time: f32, dt: f32) -> Scene {

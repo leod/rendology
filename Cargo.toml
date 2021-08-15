@@ -13,7 +13,7 @@ readme = "README.md"
 
 [dependencies]
 nalgebra = "0.18"
-glium = "0.25"
+glium = "0.30"
 log = "0.4"
 glsl = "3.0"
 num-traits = "0.2"

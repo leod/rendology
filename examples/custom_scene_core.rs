@@ -3,8 +3,24 @@ use std::time::Instant;
 use floating_duration::TimeAsFloat;
 use nalgebra as na;
 
-use glium::glutin::{self, ElementState, VirtualKeyCode, WindowEvent};
-use glium::Surface;
+use glium::{
+    glutin::{
+        self,
+        dpi::PhysicalSize,
+        event::{
+            ElementState,
+            Event,
+            VirtualKeyCode,
+            WindowEvent,
+        },
+        event_loop::{
+            ControlFlow,
+            EventLoop,
+        },
+        window::WindowBuilder,
+    },
+    Surface,
+};
 
 use rendology::{
     basic_obj, BasicObj, InstancingMode, Light, Mesh, RenderList, ShadedScenePass,
@@ -232,10 +248,10 @@ fn main() {
     simple_logger::init_with_level(log::Level::Info).unwrap();
 
     // Initialize glium
-    let mut events_loop = glutin::EventsLoop::new();
+    let events_loop = EventLoop::new();
     let display = {
-        let window_builder = glutin::WindowBuilder::new()
-            .with_dimensions(WINDOW_SIZE.into())
+        let window_builder = WindowBuilder::new()
+            .with_inner_size(PhysicalSize::new(WINDOW_SIZE.0, WINDOW_SIZE.1))
             .with_title("Rendology example: Cube");
         let context_builder = glutin::ContextBuilder::new();
         glium::Display::new(window_builder, context_builder, &events_loop).unwrap()
@@ -253,18 +269,19 @@ fn main() {
     let mut pipeline = Pipeline::create(&display, &pipeline_config).unwrap();
 
     let start_time = Instant::now();
-    let mut quit = false;
-    while !quit {
+    events_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::Poll;
+
         let mut recreate_pipeline = false;
-        events_loop.poll_events(|event| {
-            if let glutin::Event::WindowEvent { event, .. } = event {
-                match event {
-                    WindowEvent::CloseRequested => {
-                        quit = true;
-                    }
-                    WindowEvent::KeyboardInput { input, .. }
-                        if input.state == ElementState::Pressed =>
-                    {
+        match event {
+            Event::LoopDestroyed => return,
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::CloseRequested => {
+                    *control_flow = ControlFlow::Exit;
+                    return
+                },
+                WindowEvent::KeyboardInput { input, .. } =>
+                    if input.state == ElementState::Pressed {
                         // Allow toggling effects
                         match input.virtual_keycode {
                             Some(VirtualKeyCode::F1) => {
@@ -290,11 +307,11 @@ fn main() {
                             }
                             _ => (),
                         }
-                    }
-                    _ => (),
-                }
-            }
-        });
+                    },
+                _ => (),
+            },
+            _ => (),
+        };
 
         if recreate_pipeline {
             pipeline = Pipeline::create(&display, &pipeline_config).unwrap();
@@ -311,7 +328,7 @@ fn main() {
             .unwrap();
 
         target.finish().unwrap();
-    }
+    });
 }
 
 fn scene(time: f32) -> Scene {
